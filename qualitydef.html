@@ -114,6 +114,53 @@
                 tableBody.appendChild(row);
             }
         }
+
+document.addEventListener("contextmenu", function (e) {
+    e.preventDefault(); // Disable right-click menu
+});
+
+document.addEventListener("keydown", function (e) {
+    // Disable common copy shortcuts: Ctrl+C, Ctrl+X, Ctrl+U, and Ctrl+S
+    if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener("selectstart", function (e) {
+    e.preventDefault(); // Disable text selection
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) {
+        e.preventDefault();
+    }
+    if (e.ctrlKey && e.key === "P") {
+        e.preventDefault();
+    }
+});
+let logoutTimer;
+
+// Function to reset the logout timer
+function resetTimer() {
+    clearTimeout(logoutTimer); // Clear any existing timer
+    logoutTimer = setTimeout(logoutUser, 60000); // Set new timer for 1 min (60000 ms)
+}
+
+// Function to log out the user
+function logoutUser() {
+    localStorage.setItem("loggedIn", "false"); // Reset login flag
+    window.location.href = "index.html"; // Redirect to login page
+}
+
+// Event listeners for user activity
+document.addEventListener("mousemove", resetTimer);
+document.addEventListener("keypress", resetTimer);
+document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
+document.addEventListener("click", resetTimer);
+
+// Start the timer when the page loads
+resetTimer();
+
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -191,36 +238,29 @@
             color: white;
         }
 
-        /* Back to Main Page button styling */
+        /* Back to Main Page Button */
         .back-button {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
             background-color: #007BFF;
             color: white;
-            border: none;
+            padding: 10px 20px;
             border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
             text-decoration: none;
-            transition: background-color 0.3s ease;
+            font-size: 1rem;
+            z-index: 1000;
         }
 
         .back-button:hover {
             background-color: #0056b3;
-        }
-
-        .back-button-container {
-            text-align: center;
-            margin-top: 20px;
-            padding-bottom: 60px; /* Ensure space before footer */
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Stresson Engineering</h1>
+        <h1>Systemactic industries ltd </h1>
     </header>
 
     <div class="main-content">
@@ -228,20 +268,26 @@
         <p>The current count of quality defective items is:</p>
         <div id="count">Loading...</div>
 
-        <canvas id="defectiveChart"></canvas>
+      <div style="overflow-y: auto; max-height: 400px; margin: 20px auto; width: 100%;">
+    <canvas id="defectiveChart" style="height: 600px; width: 100%;"></canvas>
+</div>
 
-        <h2>Day-wise Quality Defective Count</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Defective Count</th>
-                </tr>
-            </thead>
-            <tbody id="defectiveTableBody">
-                <!-- Day-wise data will be populated here -->
-            </tbody>
-        </table>
+
+      <h2>Day-wise Quality Defective Count</h2>
+<div style="max-height: 300px; overflow-y: auto; margin: auto; width: 60%; border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Defective Count</th>
+            </tr>
+        </thead>
+        <tbody id="defectiveTableBody">
+            <!-- Day-wise data will be populated here -->
+        </tbody>
+    </table>
+</div>
+
 
         <!-- Back to Main Page button -->
         <div class="back-button-container">
@@ -250,8 +296,10 @@
     </div>
 
     <footer>
-        <p>&copy; 2024 Stresson Engineering</p>
+        <p>&copy; 2025 Systematic Industries Ltd</p>
     </footer>
+
+
 
 </body>
 </html>
