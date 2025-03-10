@@ -244,7 +244,7 @@
     </div>
 
     <footer>
-        StressON | Production Monitoring System © 2024
+        Systematic Industries Ltd | Production Monitoring System © 2025
     </footer>
 
     <script>
@@ -672,6 +672,47 @@ XLSX.utils.book_append_sheet(wb, dailySheet, "Daily Production");
             window.location.href = 'main.html';
         }
 
+
+let logoutTimer;
+
+// Function to reset the logout timer
+function resetTimer() {
+    clearTimeout(logoutTimer); // Clear any existing timer
+    logoutTimer = setTimeout(logoutUser, 120000); // Set new timer for 1 min (60000 ms)
+}
+
+// Function to log out the user
+function logoutUser() {
+    localStorage.setItem("loggedIn", "false"); // Reset login flag
+    window.location.href = "index.html"; // Redirect to login page
+}
+
+// Event listeners for user activity
+document.addEventListener("mousemove", resetTimer);
+document.addEventListener("keypress", resetTimer);
+document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
+document.addEventListener("click", resetTimer);
+
+// Start the timer when the page loads
+resetTimer();
+
     </script>
+
+<script>
+    document.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+    });
+
+    document.addEventListener("keydown", function(event) {
+        // Disable F12, Ctrl+Shift+I, Ctrl+U
+        if (event.key === "F12" || 
+            (event.ctrlKey && event.shiftKey && event.key === "I") || 
+            (event.ctrlKey && event.key === "U")) {
+            event.preventDefault();
+        }
+    });
+</script>
+
+
 </body>
 </html>
