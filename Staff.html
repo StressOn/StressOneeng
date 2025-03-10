@@ -85,26 +85,23 @@
         text-align: center;
         background-color: #f1f1f1;
     }
+ /* Back to Main Page Button */
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            z-index: 1000;
+        }
 
-    .back-button-container {
-        margin: 20px 0;
-        text-align: center; /* Center the button */
-    }
-
-    .back-button {
-        display: inline-block;
-        padding: 10px 20px;
-        font-size: 16px;
-        color: white;
-        background-color: #007bff; /* Bootstrap primary color */
-        border: none;
-        border-radius: 5px;
-        text-decoration: none; /* Remove underline */
-    }
-
-    .back-button:hover {
-        background-color: #0056b3; /* Darker shade on hover */
-    }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
 </style>
 
 
@@ -112,7 +109,7 @@
 </head>
 <body>
    <header>
-    <h1>StressON Engineering - Staff Daily Production</h1>
+    <h1>Systematic Industries Ltd- Staff Daily Production</h1>
 </header>
 
 <div class="back-button-container">
@@ -431,6 +428,54 @@ function updateChart(chartId, dayWiseTotals, staff) {
             fetchProductionData('StaffB', 'productionChartB', 'productionTableBodyB', 'countB');
             fetchProductionData('StaffC', 'productionChartC', 'productionTableBodyC', 'countC');
         });
+
+
+document.addEventListener("contextmenu", function (e) {
+    e.preventDefault(); // Disable right-click menu
+});
+
+document.addEventListener("keydown", function (e) {
+    // Disable common copy shortcuts: Ctrl+C, Ctrl+X, Ctrl+U, and Ctrl+S
+    if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener("selectstart", function (e) {
+    e.preventDefault(); // Disable text selection
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) {
+        e.preventDefault();
+    }
+    if (e.ctrlKey && e.key === "P") {
+        e.preventDefault();
+    }
+});
+let logoutTimer;
+
+// Function to reset the logout timer
+function resetTimer() {
+    clearTimeout(logoutTimer); // Clear any existing timer
+    logoutTimer = setTimeout(logoutUser, 120000); // Set new timer for 1 min (60000 ms)
+}
+
+// Function to log out the user
+function logoutUser() {
+    localStorage.setItem("loggedIn", "false"); // Reset login flag
+    window.location.href = "index.html"; // Redirect to login page
+}
+
+// Event listeners for user activity
+document.addEventListener("mousemove", resetTimer);
+document.addEventListener("keypress", resetTimer);
+document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
+document.addEventListener("click", resetTimer);
+
+// Start the timer when the page loads
+resetTimer();
+
     </script>
 </body>
 </html>
