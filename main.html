@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stresson Engineering - Control Panel</title>
+    <title>Systematic Industried Ltd- Unit 6 ACS  - Control Panel</title>
 
     <style>
          <style>
@@ -133,7 +133,7 @@
 </head>
 <body>
 
-<div class="header">Stresson Engineering - Control Panel</div>
+<div class="header">Systematic Industried Ltd- Unit 6 ACS  - Control Panel</div>
 
 <h1>Control Dashboard Panel</h1>
 
@@ -141,7 +141,7 @@
    <button id="logoutButton" class="button logout-button">Logout</button>
 
     <div class="device-card">
-        <h2>Device 1</h2>
+        <h2>Tubular 1+6</h2>
         <a href="d1prd.html" class="button">Production</a>
         <a href="d1downtime.html" class="button downtime-button">Downtime</a>
         <a href="Staff.html" class="button">Staff</a>
@@ -150,7 +150,7 @@
     </div>
 
     <div class="device-card">
-        <h2>Device 2</h2>
+        <h2>Drawing 1 ( 10 block) </h2>
         <a href="D2prd.html" class="button">Production</a>
         <a href="D2 downtime.html" class="button downtime-button">Downtime</a>
         <a href="D2 Staff.html" class="button">Staff</a>
@@ -159,7 +159,7 @@
     </div>
 
     <div class="device-card">
-        <h2>Device 3</h2>
+        <h2>Drawing 2 ( 8 block)</h2>
         <a href="D3prd.html" class="button">Production</a>
         <a href="D3 downtime.html" class="button downtime-button">Downtime</a>
         <a href="D3 Staff.html" class="button">Staff</a>
@@ -169,7 +169,7 @@
 </div>
 
 <footer>
-    &copy; 2024 Stresson Engineering. All Rights Reserved.
+    &copy; 2025 Systematic Industried Ltd. All Rights Reserved.
 </footer>
 
 <script>
@@ -200,6 +200,55 @@ const firebaseConfig = {
 };
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+
+
+
+document.addEventListener("contextmenu", function (e) {
+    e.preventDefault(); // Disable right-click menu
+});
+
+document.addEventListener("keydown", function (e) {
+    // Disable common copy shortcuts: Ctrl+C, Ctrl+X, Ctrl+U, and Ctrl+S
+    if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener("selectstart", function (e) {
+    e.preventDefault(); // Disable text selection
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) {
+        e.preventDefault();
+    }
+    if (e.ctrlKey && e.key === "P") {
+        e.preventDefault();
+    }
+});
+let logoutTimer;
+
+// Function to reset the logout timer
+function resetTimer() {
+    clearTimeout(logoutTimer); // Clear any existing timer
+    logoutTimer = setTimeout(logoutUser, 120000); // Set new timer for 1 min (60000 ms)
+}
+
+// Function to log out the user
+function logoutUser() {
+    localStorage.setItem("loggedIn", "false"); // Reset login flag
+    window.location.href = "index.html"; // Redirect to login page
+}
+
+// Event listeners for user activity
+document.addEventListener("mousemove", resetTimer);
+document.addEventListener("keypress", resetTimer);
+document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
+document.addEventListener("click", resetTimer);
+
+// Start the timer when the page loads
+resetTimer();
+
 </script>
 </body>
 </html>
