@@ -408,53 +408,71 @@ var lastKnownLength = null; // To track the last known length
 
 
 
-function calculateYesterdayProductionFromChart() {
+function calculateMonthlyProductionFromChart() {
     const chartData = productionChart.data.datasets[0].data;  
     const timeLabels = productionChart.data.labels;  
 
-    console.log("Chart Data:", chartData);  
-    console.log("Time Labels:", timeLabels);  
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    let firstValue = null;
+    let lastValue = null;
+
+    for (let i = 0; i < timeLabels.length; i++) {
+        const date = new Date(timeLabels[i]);
+        const month = date.getMonth();
+        const year = date.getFullYear();
+
+        if (month === currentMonth && year === currentYear) {
+            if (firstValue === null) {
+                firstValue = chartData[i];
+            }
+            lastValue = chartData[i];
+        }
+    }
+
+    const monthProduction = firstValue !== null && lastValue !== null 
+        ? (lastValue - firstValue).toFixed(2) 
+        : "N/A";
+
+    document.getElementById("perMonthProduction").innerText = monthProduction;
+}
+
+function calculateYesterdayProductionFromChart() {
+    const chartData = productionChart.data.datasets[0].data;  
+    const timeLabels = productionChart.data.labels;  
 
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
 
-    console.log("Yesterday's Date:", yesterday.toLocaleDateString());  // Log the date for yesterday
-
     let yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0)).getTime();
     let yesterdayEnd = new Date(yesterday.setHours(23, 59, 59, 999)).getTime();
-
-    console.log("Yesterday Start:", new Date(yesterdayStart));  
-    console.log("Yesterday End:", new Date(yesterdayEnd));  
 
     let firstValue = null;
     let lastValue = null;
 
     for (let i = 0; i < timeLabels.length; i++) {
         const timestamp = new Date(timeLabels[i]).getTime();
-        console.log(`Timestamp for label ${timeLabels[i]}:`, timestamp);  
 
         if (timestamp >= yesterdayStart && timestamp <= yesterdayEnd) {
-            console.log(`Value at timestamp ${timeLabels[i]}:`, chartData[i]);  
             if (firstValue === null) {
                 firstValue = chartData[i];
-                console.log("First value found:", firstValue);  
             }
             lastValue = chartData[i];
-            console.log("Last value updated to:", lastValue);  
         }
     }
 
-    // If no values were found for yesterday, set production to 0
-    const productionYesterday = (firstValue !== null && lastValue !== null) ? lastValue - firstValue : 0; 
-    console.log("Production for yesterday:", productionYesterday);  
+    const productionYesterday = firstValue !== null && lastValue !== null 
+        ? (lastValue - firstValue).toFixed(2) 
+        : "0.00";
+
     document.getElementById("perDayProduction").innerText = productionYesterday;
 }
 
 
 
 
-// Calculate monthly production from chart data
 function calculateMonthlyProductionFromChart() {
     const chartData = productionChart.data.datasets[0].data;  // Get the production data from the chart
     const timeLabels = productionChart.data.labels;  // Get the corresponding timestamps
@@ -478,7 +496,10 @@ function calculateMonthlyProductionFromChart() {
         }
     }
 
-    const monthProduction = firstValue !== null && lastValue !== null ? lastValue - firstValue : "N/A";
+    const monthProduction = firstValue !== null && lastValue !== null 
+        ? (lastValue - firstValue).toFixed(2) 
+        : "N/A";
+
     document.getElementById("perMonthProduction").innerText = monthProduction;
 }
 
@@ -491,13 +512,13 @@ function calculateMonthlyProductionFromChart() {
 
 
 
-                // Display the latest value (finished length) and time since last update
-                if (latestValue !== null && latestTimestamp !== null) {
-                    document.getElementById("lastValueDisplay").innerText = latestValue;
-                    
-                    var hoursAgo = Math.floor((Date.now() - latestTimestamp) / (1000 * 60 * 60));
-                    document.getElementById("lastUpdateDisplay").innerText = hoursAgo + " hours ago";
-                }
+// Display the latest value (finished length) and time since last update
+if (latestValue !== null && latestTimestamp !== null) {
+    document.getElementById("lastValueDisplay").innerText = parseFloat(latestValue).toFixed(2);
+
+    var hoursAgo = Math.floor((Date.now() - latestTimestamp) / (1000 * 60 * 60));
+    document.getElementById("lastUpdateDisplay").innerText = hoursAgo + " hours ago";
+}
 
 
 
