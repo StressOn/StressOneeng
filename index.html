@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stresson Engineering - IoT Dashboard Login</title>
+    <title>Systematic Industries Ltd - IoT Dashboard Login</title>
     <style>
         /* General reset */
         * {
@@ -86,7 +86,7 @@
 <body>
 
     <div class="login-container">
-        <h1>Welcome to Stresson Engineering</h1>
+        <h1>Welcome to Systematic Industries Ltd</h1>
         <p>Log in to access the IoT Dashboard</p>
 
         <!-- Input fields for username and password (empty by default) -->
@@ -103,7 +103,7 @@
 
     <script>
         // Predefined login credentials
-        const defaultUsername = 'san';
+        const defaultUsername = 'sys';
         const defaultPassword = '1234';
 
         // Check if user is already logged in
@@ -111,8 +111,8 @@
             window.location.href = 'main.html';  // Redirect to main page if already logged in
         }
 
-        // Handle login
-        document.getElementById('loginButton').addEventListener('click', function() {
+        // Function to handle login
+        function handleLogin() {
             const username = document.getElementById('usernameInput').value;
             const password = document.getElementById('passwordInput').value;
 
@@ -125,12 +125,53 @@
                 // Show the error message
                 document.getElementById('errorMessage').style.display = 'block';
             }
+        }
+
+        // Handle login button click
+        document.getElementById('loginButton').addEventListener('click', handleLogin);
+
+        // Handle Enter key press in input fields
+        document.getElementById('usernameInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
         });
 
-        // Disable right-click context menu
-        document.addEventListener('contextmenu', function(event) {
-            event.preventDefault();
+        document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
         });
+
+        // Security measures
+        document.addEventListener("contextmenu", function (e) {
+            e.preventDefault(); // Disable right-click menu
+        });
+
+        document.addEventListener("keydown", function (e) {
+            // Disable common shortcuts for copying and inspecting elements
+            if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+                e.preventDefault();
+            }
+
+            // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+            if (e.key === "F12" || 
+                (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+                e.preventDefault();
+            }
+        });
+
+        (function() {
+            function devToolsDetection() {
+                let start = performance.now();
+                debugger; // Triggers if DevTools is open
+                let end = performance.now();
+                if (end - start > 100) { // DevTools slows execution
+                    window.location.href = "about:blank"; // Redirect to a blank page
+                }
+            }
+            setInterval(devToolsDetection, 1000); // Run check every second
+        })();
     </script>
 </body>
 </html>
