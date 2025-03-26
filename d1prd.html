@@ -185,6 +185,21 @@
             padding: 10px 0;
         }
     }
+
+#machineStatus {
+    font-weight: bold;
+}
+.Running {
+    color: #28a745; /* Green */
+}
+.Stopped {
+    color: #dc3545; /* Red */
+}
+[data-status="inactive"] {
+    color: #ffc107; /* Yellow */
+    font-style: italic;
+}
+
 </style>
 
 
@@ -209,7 +224,7 @@
                     <div id="lastValueDisplay">N/A</div>
                 </div>
                 <div class="info-box">
-                    <strong>Last Update (hours ago)</strong>
+                    <strong>Last Update</strong>
                     <div id="lastUpdateDisplay">N/A</div>
                 </div>
                 <div class="info-box">
@@ -244,19 +259,16 @@
     </div>
 
     <footer>
-        StressON | Production Monitoring System © 2024
+        Systematic Industries Ltd | Production Monitoring System © 2025
     </footer>
 
     <script>
         // Firebase configuration
         var firebaseConfig = {
-             apiKey: "AIzaSyBUtpT41WDSPM2Vwd9ONkXrKQjSD1FgFJs",
-            authDomain: "customer-3-54cd9.firebaseapp.com",
-            databaseURL: "https://customer-3-54cd9-default-rtdb.firebaseio.com/",
-            projectId: "customer-3-54cd9",
-            storageBucket: "customer-3-54cd9.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:123456789abcd"
+             apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
+     
+            databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/",
+          
         };
 
         // Initialize Firebase
@@ -408,53 +420,71 @@ var lastKnownLength = null; // To track the last known length
 
 
 
-function calculateYesterdayProductionFromChart() {
+function calculateMonthlyProductionFromChart() {
     const chartData = productionChart.data.datasets[0].data;  
     const timeLabels = productionChart.data.labels;  
 
-    console.log("Chart Data:", chartData);  
-    console.log("Time Labels:", timeLabels);  
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    let firstValue = null;
+    let lastValue = null;
+
+    for (let i = 0; i < timeLabels.length; i++) {
+        const date = new Date(timeLabels[i]);
+        const month = date.getMonth();
+        const year = date.getFullYear();
+
+        if (month === currentMonth && year === currentYear) {
+            if (firstValue === null) {
+                firstValue = chartData[i];
+            }
+            lastValue = chartData[i];
+        }
+    }
+
+    const monthProduction = firstValue !== null && lastValue !== null 
+        ? (lastValue - firstValue).toFixed(2) 
+        : "N/A";
+
+    document.getElementById("perMonthProduction").innerText = monthProduction;
+}
+
+function calculateYesterdayProductionFromChart() {
+    const chartData = productionChart.data.datasets[0].data;  
+    const timeLabels = productionChart.data.labels;  
 
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
 
-    console.log("Yesterday's Date:", yesterday.toLocaleDateString());  // Log the date for yesterday
-
     let yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0)).getTime();
     let yesterdayEnd = new Date(yesterday.setHours(23, 59, 59, 999)).getTime();
-
-    console.log("Yesterday Start:", new Date(yesterdayStart));  
-    console.log("Yesterday End:", new Date(yesterdayEnd));  
 
     let firstValue = null;
     let lastValue = null;
 
     for (let i = 0; i < timeLabels.length; i++) {
         const timestamp = new Date(timeLabels[i]).getTime();
-        console.log(`Timestamp for label ${timeLabels[i]}:`, timestamp);  
 
         if (timestamp >= yesterdayStart && timestamp <= yesterdayEnd) {
-            console.log(`Value at timestamp ${timeLabels[i]}:`, chartData[i]);  
             if (firstValue === null) {
                 firstValue = chartData[i];
-                console.log("First value found:", firstValue);  
             }
             lastValue = chartData[i];
-            console.log("Last value updated to:", lastValue);  
         }
     }
 
-    // If no values were found for yesterday, set production to 0
-    const productionYesterday = (firstValue !== null && lastValue !== null) ? lastValue - firstValue : 0; 
-    console.log("Production for yesterday:", productionYesterday);  
+    const productionYesterday = firstValue !== null && lastValue !== null 
+        ? (lastValue - firstValue).toFixed(2) 
+        : "0.00";
+
     document.getElementById("perDayProduction").innerText = productionYesterday;
 }
 
 
 
 
-// Calculate monthly production from chart data
 function calculateMonthlyProductionFromChart() {
     const chartData = productionChart.data.datasets[0].data;  // Get the production data from the chart
     const timeLabels = productionChart.data.labels;  // Get the corresponding timestamps
@@ -478,7 +508,10 @@ function calculateMonthlyProductionFromChart() {
         }
     }
 
-    const monthProduction = firstValue !== null && lastValue !== null ? lastValue - firstValue : "N/A";
+    const monthProduction = firstValue !== null && lastValue !== null 
+        ? (lastValue - firstValue).toFixed(2) 
+        : "N/A";
+
     document.getElementById("perMonthProduction").innerText = monthProduction;
 }
 
@@ -490,31 +523,50 @@ function calculateMonthlyProductionFromChart() {
 
 
 
+// Initialize variables
+let lastKnownLength = localStorage.getItem('lastKnownLength') || null;
+let lastKnownTimestamp = localStorage.getItem('lastKnownTimestamp') || null;
 
-                // Display the latest value (finished length) and time since last update
-                if (latestValue !== null && latestTimestamp !== null) {
-                    document.getElementById("lastValueDisplay").innerText = latestValue;
-                    
-                    var hoursAgo = Math.floor((Date.now() - latestTimestamp) / (1000 * 60 * 60));
-                    document.getElementById("lastUpdateDisplay").innerText = hoursAgo + " hours ago";
-                }
+// Listen for Firebase updates
+var sensorRef = database.ref('Sensor/readings');
+sensorRef.limitToLast(1).on('child_added', function(snapshot) {
+    var data = snapshot.val();
+    var latestValue = parseFloat(data.length).toFixed(2); // Ensure 2 decimal precision
+    var latestTimestamp = data.timestamp * 1000; // Convert to milliseconds
+    
+    // Update display values
+    document.getElementById("lastValueDisplay").innerText = latestValue;
+    var minutesAgo = Math.floor((Date.now() - latestTimestamp) / (1000 * 60));
+    document.getElementById("lastUpdateDisplay").innerText = minutesAgo + " minutes ago";
 
-
-
-// Update machine status
-        if (latestValue !== null) {
-            // Check machine status
-            if (lastKnownLength !== null && lastKnownLength !== latestValue) {
-                document.getElementById("machineStatus").innerText = " Running";
-            } else {
-                document.getElementById("machineStatus").innerText = "Stopped";
-            }
-
-            // Update last known length
-            lastKnownLength = latestValue; // Update to current value for the next check
-        }
-
-
+    // Calculate time difference in minutes
+    var minutesSinceUpdate = (Date.now() - latestTimestamp) / (1000 * 60);
+    
+    // Debug logs (remove after testing)
+    console.log("Last:", lastKnownLength, "Current:", latestValue, "Changed:", 
+               lastKnownLength !== null && parseFloat(lastKnownLength).toFixed(2) !== latestValue);
+    
+    // Determine machine status
+    var newStatus;
+    if (minutesSinceUpdate > 5) {
+        newStatus = "Offline";
+    } 
+    else if (lastKnownLength !== null && parseFloat(lastKnownLength).toFixed(2) !== latestValue) {
+        newStatus = "Running";
+    } 
+    else {
+        newStatus = "Stopped";
+    }
+    
+    // Update UI and storage
+    document.getElementById("machineStatus").innerText = newStatus;
+    localStorage.setItem('lastKnownLength', latestValue);
+    localStorage.setItem('lastKnownTimestamp', latestTimestamp);
+    
+    // Update for next check
+    lastKnownLength = latestValue;
+    lastKnownTimestamp = latestTimestamp;
+});
 
             });
 
@@ -529,7 +581,7 @@ perDayRef.on('value', function(snapshot) {
 
     // Check if the snapshot has valid data and if count exists
     if (data && data.count !== undefined) {
-        count = data.count; // If count is present, use it
+        count = parseFloat(data.count).toFixed(1);
     } else {
         count = "N/A"; // Otherwise, set it to "N/A"
     }
@@ -672,6 +724,47 @@ XLSX.utils.book_append_sheet(wb, dailySheet, "Daily Production");
             window.location.href = 'main.html';
         }
 
+
+let logoutTimer;
+
+// Function to reset the logout timer
+function resetTimer() {
+    clearTimeout(logoutTimer); // Clear any existing timer
+    logoutTimer = setTimeout(logoutUser, 120000); // Set new timer for 1 min (60000 ms)
+}
+
+// Function to log out the user
+function logoutUser() {
+    localStorage.setItem("loggedIn", "false"); // Reset login flag
+    window.location.href = "index.html"; // Redirect to login page
+}
+
+// Event listeners for user activity
+document.addEventListener("mousemove", resetTimer);
+document.addEventListener("keypress", resetTimer);
+document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
+document.addEventListener("click", resetTimer);
+
+// Start the timer when the page loads
+resetTimer();
+
     </script>
+
+<script>
+    document.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+    });
+
+    document.addEventListener("keydown", function(event) {
+        // Disable F12, Ctrl+Shift+I, Ctrl+U
+        if (event.key === "F12" || 
+            (event.ctrlKey && event.shiftKey && event.key === "I") || 
+            (event.ctrlKey && event.key === "U")) {
+            event.preventDefault();
+        }
+    });
+</script>
+
+
 </body>
 </html>
