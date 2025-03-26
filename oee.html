@@ -3,471 +3,705 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Downtime Data</title>
-    <!-- Include Firebase SDK (version 8) -->
+    <title>OEE Dashboard | Systematic Industries</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Global styling */
-        html, body {
-            height: 100%;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
         }
-
-        /* Fixed header */
+        
         header {
-            background-color: #007BFF; /* Company color */
+            background: linear-gradient(135deg, #007BFF, #0056b3);
             color: white;
-            padding: 15px;
+            padding: 20px 0;
             text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: fixed;
+            width: 100%;
             top: 0;
-            width: 100%;
             z-index: 1000;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 100px auto 80px;
+            padding: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 30px;
         }
-
-        header h1 {
-            margin: 0;
-            font-size: 24px;
+        
+        h1, h2 {
+            color: #007BFF;
+            margin-top: 0;
         }
-
-        /* Fixed footer */
-        footer {
-            background-color:  #333; /* Company color */
-            color: white;
-            padding: 10px 0;
-            text-align: center;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+        
+        .input-group {
+            margin-bottom: 20px;
         }
-
-        /* Main content */
-        .main-content {
-            margin-top: 100px; /* Space for fixed header */
-            padding-bottom: 60px; /* Space for fixed footer */
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
         }
-
-        /* Table styling */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        /* Chart styling */
-        #efficiencyChart {
-            width: 80%;
-            height: 100px;
-            margin-top: 20px;
-        }
-
-        /* Input field styling */
-        #targetInput {
-            margin-bottom: 10px;
-            padding: 5px;
+        
+        input {
+            padding: 10px;
             width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
         }
-
-        /* Button styling */
+        
         button {
             background-color: #28a745;
             color: white;
             padding: 10px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            margin-top: 10px;
+            font-size: 16px;
+            transition: background-color 0.3s;
         }
-
+        
         button:hover {
             background-color: #218838;
         }
-
-        /* Back button */
-        .back-button {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
+        
+        .scrollable-table {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
             background-color: #007BFF;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            text-align: center;
+            position: sticky;
+            top: 0;
         }
-
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        .oee-metrics {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            width: 30%;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007BFF;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
         .back-button:hover {
             background-color: #0056b3;
         }
-	/* Scrollable production table */
-        #productionTableContainer {
-            max-height: 200px; /* Set a height for scrolling */
-            overflow-y: auto; /* Enable vertical scrolling */
+        
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        #dataError {
+            background-color: #ffeeee;
+            color: #d32f2f;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ef9a9a;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        #productionTable th {
+            background-color: #4CAF50;
+        }
+        
+        #productionTable tr:nth-child(even) {
+            background-color: #f0f9f0;
+        }
+        
+        .placeholder-message {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 80px auto 60px;
+                padding: 15px;
+            }
+            
+            .oee-metrics {
+                flex-direction: column;
+            }
+            
+            .metric-card {
+                width: 100%;
+                margin-bottom: 15px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
         }
     </style>
 </head>
 <body>
-
-    <!-- Fixed header -->
     <header>
-        <h1>Stresson Engineering - Downtime Data</h1>
+        <h1>Systematic Industries - OEE Dashboard</h1>
     </header>
 
-    <!-- Main content -->
-    <div class="main-content">
-        <h1>Downtime Data</h1>
-        <table id="downtimeTable">
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Total Downtimes</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Data will be inserted here -->
-            </tbody>
-        </table>
-
-       <div id="productionTableContainer">
-    <table id="productionTable">
-        <thead>
-            <tr>
-                <th>Total Length</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Production data will be inserted here -->
-        </tbody>
-    </table>
-</div>
-
-        <h1>Efficiency Chart</h1>
-        <input type="number" id="targetInput" placeholder="Set Target Production" />
-        <button onclick="updateChart()">Update Chart</button>
-        <canvas id="efficiencyChart" height="300"></canvas>
-        <!-- Back button -->
-        <a href="main.html" class="back-button">Back to Main Page</a>
+    <div class="container">
+        <div id="dataError"></div>
+        
+        <div class="card">
+            <h2>Line Configuration</h2>
+            <div class="input-group">
+                <label for="lineSpeed">Line Speed (meters/day):</label>
+                <input type="number" id="lineSpeed" placeholder="Enter line speed" value="1000">
+            </div>
+            <div class="input-group">
+                <label for="shiftHours">Shift Hours (per day):</label>
+                <input type="number" id="shiftHours" placeholder="Enter shift hours" value="8">
+            </div>
+            <button onclick="updateOEE()">Calculate OEE</button>
+            <button onclick="fetchAllData()" style="margin-left: 10px;">Refresh Data</button>
+        </div>
+        
+        <div class="card">
+            <h2>OEE Metrics</h2>
+            <div class="oee-metrics">
+                <div class="metric-card">
+                    <div>Availability</div>
+                    <div class="metric-value" id="availability">0%</div>
+                    <div>(Operating Time / Planned Time)</div>
+                </div>
+                <div class="metric-card">
+                    <div>Performance</div>
+                    <div class="metric-value" id="performance">0%</div>
+                    <div>(Actual Output / Ideal Output)</div>
+                </div>
+                <div class="metric-card">
+                    <div>OEE</div>
+                    <div class="metric-value" id="oee">0%</div>
+                    <div>(Availability × Performance)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Production vs Target</h2>
+            <canvas id="productionChart"></canvas>
+            <div class="placeholder-message" id="chartPlaceholder">Loading production data...</div>
+        </div>
+        
+        <div class="card">
+            <h2>Production Records</h2>
+            <div class="scrollable-table">
+                <table id="productionTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Total (m)</th>
+                            <th>Avg/Reading (m)</th>
+                            <th>Min (m)</th>
+                            <th>Max (m)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5">Loading production records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Downtime Records</h2>
+            <div class="scrollable-table">
+                <table id="downtimeTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Duration (min)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3">Loading downtime records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- Fixed footer -->
+    <a href="main.html" class="back-button">Back to Dashboard</a>
+    
     <footer>
-        <p>&copy; 2024 Stresson Engineering. All Rights Reserved.</p>
+        <p>&copy; 2025 Systematic Industries Ltd. All rights reserved.</p>
     </footer>
 
-<script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
+            databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
+        };
 
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
+        // Global variables
+        let productionChart;
+        let lineSpeed = 1000;
+        let shiftHours = 8;
+        const downtimeData = {
+            dates: [],
+            types: [],
+            durations: []
+        };
 
-
- // Debugging output
-        console.log("Logged In Status:", localStorage.getItem("loggedIn"));
-        if (localStorage.getItem("loggedIn") !== "true") {
-            console.log("Redirecting to index.html");
-            window.location.href = "index.html"; // Redirect to login page
+        // Fetch all data
+        function fetchAllData() {
+            showLoadingState();
+            fetchProductionData();
+            fetchDowntimeData();
         }
 
-
-
-// Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyBUtpT41WDSPM2Vwd9ONkXrKQjSD1FgFJs",
-    authDomain: "customer-3-54cd9.firebaseapp.com",
-    databaseURL: "https://customer-3-54cd9-default-rtdb.firebaseio.com/",
-    projectId: "customer-3-54cd9",
-    storageBucket: "customer-3-54cd9.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:123456789abcd"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let efficiencyChart;
-let targetProduction = 0;
-
-// Function to fetch and display downtime data
-function fetchDowntimeData() {
-    const downtimeTypes = ['maintenanceDowntime', 'moldDefectiveDowntime', 'noMaterialDowntime'];
-
-    downtimeTypes.forEach(type => {
-        db.ref(type).once('value', (snapshot) => {
-            const data = snapshot.val();
-            aggregateDowntimeData(type, data);
-        });
-    });
-}
-
-// Function to aggregate downtime data and insert it into the table
-function aggregateDowntimeData(type, data) {
-    const aggregatedData = {};
-
-    if (data) { // Check if data exists
-        for (const key in data) {
-            const entry = data[key];
-            const duration = entry.duration;
-            const date = new Date(entry.timestamp * 1000).toISOString().split('T')[0]; // Extract date (YYYY-MM-DD)
-
-            // Only count the downtime if duration is greater than 0
-            if (duration > 0) {
-                if (!aggregatedData[date]) {
-                    aggregatedData[date] = 0;
-                }
-
-                // Increment the count for that date
-                aggregatedData[date]++;
-            }
+        // Show loading state
+        function showLoadingState() {
+            document.getElementById('chartPlaceholder').textContent = "Loading data...";
+            document.querySelector('#productionTable tbody').innerHTML = '<tr><td colspan="5">Loading data...</td></tr>';
+            document.querySelector('#downtimeTable tbody').innerHTML = '<tr><td colspan="3">Loading data...</td></tr>';
+            hideError();
         }
-    }
 
-    // Insert aggregated data into the table
-    for (const date in aggregatedData) {
-        insertDataToTable(type, aggregatedData[date], date);
-    }
-}
+        // Hide error message
+        function hideError() {
+            document.getElementById('dataError').style.display = 'none';
+        }
 
-// Function to fetch and display production data
-function fetchProductionData() {
-    db.ref('Sensor/readings').once('value', (snapshot) => {
-        const data = snapshot.val();
-        aggregateProductionData(data);
-    });
-}
-
-
-
-
-// Function to aggregate production data and calculate daily production
-function aggregateProductionData(data) {
-    const aggregatedProductionData = {};
-    const dailyProduction = {};
-
-    if (data) { // Check if data exists
-        for (const key in data) {
-            const entry = data[key];
-            const length = entry.length; // Cumulative length
-            const timestamp = entry.timestamp; // Timestamp
+        // Show error message
+        function showError(message) {
+            const errorElement = document.getElementById('dataError');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
             
-            if (!timestamp || isNaN(length)) {
-                console.error(`Invalid entry for key ${key}:`, entry);
-                continue; // Skip invalid entries
-            }
-
-            // Convert timestamp to date (YYYY-MM-DD) with timezone handling
-            const date = new Date(timestamp * 1000).toISOString().split('T')[0];
-
-            // Only consider valid production lengths
-            if (length >= 0) {
-                aggregatedProductionData[date] = length; // Store cumulative length
-            } else {
-                console.warn(`Skipping negative length for key ${key}:`, length);
-            }
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
         }
-    }
 
-
-
-    // Logging the aggregated production data for debugging
-    console.log("Aggregated Production Data:", aggregatedProductionData);
-
-    // Calculate daily production based on cumulative lengths
-    let previousProduction = 0;
-    const sortedDates = Object.keys(aggregatedProductionData).sort(); // Sort dates
-
-    // Logging sorted dates for debugging
-    console.log("Sorted Dates:", sortedDates);
-
-    for (const date of sortedDates) {
-        const currentProduction = aggregatedProductionData[date];
-
-        // Daily production is current cumulative length minus previous cumulative length
-        const actualProduction = currentProduction - previousProduction; // Calculate daily production
-
-        // Ensure that production values are non-negative
-        dailyProduction[date] = Math.max(actualProduction, 0); // Store actual production for that date
-        
-        // Log details for debugging
-        console.log(`Date: ${date}, Current Production: ${currentProduction}, Previous Production: ${previousProduction}, Actual Production: ${dailyProduction[date]}`);
-        
-        previousProduction = currentProduction; // Update previousProduction
-    }
-
-    // Insert aggregated daily production data into the table
-    for (const date in dailyProduction) {
-        insertProductionDataToTable(dailyProduction[date], date);
-    }
-}
-
-
-
-
-
-
-
-
-
-// Function to insert downtime data into the table
-function insertDataToTable(type, totalDowntimes, date) {
-    const tableBody = document.getElementById('downtimeTable').getElementsByTagName('tbody')[0];
-
-    const row = tableBody.insertRow();
-    const typeCell = row.insertCell(0);
-    const totalCell = row.insertCell(1);
-    const dateCell = row.insertCell(2);
-
-    typeCell.innerText = type;
-    totalCell.innerText = totalDowntimes;
-    dateCell.innerText = date;
-}
-
-// Function to insert production data into the table
-function insertProductionDataToTable(totalProduction, date) {
-    const tableBody = document.getElementById('productionTable').getElementsByTagName('tbody')[0];
-
-    const row = tableBody.insertRow();
-    const productionCell = row.insertCell(0);
-    const dateCell = row.insertCell(1);
-
-    productionCell.innerText = totalProduction;
-    dateCell.innerText = date;
-}
-
-
-
-
-
-// Updated Function to Update the Chart
-function updateChart() {
-    const ctx = document.getElementById('efficiencyChart').getContext('2d');
-    const labels = [];
-    const productionData = [];
-    const downtimeData = [];  // Will need to retrieve actual downtime data
-    
-    // Collect the production data from the table
-    const productionRows = document.querySelectorAll('#productionTable tbody tr');
-    
-    productionRows.forEach((row) => {
-        const date = row.cells[1].innerText;
-        const totalProduction = parseFloat(row.cells[0].innerText);
-        
-        labels.push(date);  // Add date to X-axis labels
-        productionData.push(totalProduction);  // Add production data
-        downtimeData.push(0);  // Placeholder for downtime data (can be retrieved similarly)
-    });
-
-    // Calculate efficiency (mocked as production / (production + downtime) for now)
-    const efficiencyData = productionData.map((production, index) => {
-        return ((production / (production + downtimeData[index])) * 100) || 0;
-    });
-
-    // Get target production from input
-    targetProduction = parseFloat(document.getElementById('targetInput').value) || 0;
-
-    // Destroy previous chart instance if it exists
-    if (efficiencyChart) {
-        efficiencyChart.destroy();
-    }
-
-    // Generate the updated chart
-    efficiencyChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Production',
-                    data: productionData,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    fill: false,
-                },
-                {
-                    label: 'Downtime',
-                    data: downtimeData,  // Update when downtime data is fetched
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    fill: false,
-                },
-                {
-                    label: 'Efficiency',
-                    data: efficiencyData,
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    fill: false,
-                    yAxisID: 'efficiency-y-axis'
-                },
-                {
-                    label: 'Target',
-                    data: Array(labels.length).fill(targetProduction),
-                    borderColor: 'rgba(255, 205, 86, 1)',
-                    fill: false,
-                    borderDash: [5, 5]
+        // Function to fetch and display production data
+        function fetchProductionData() {
+            console.log("Fetching production data...");
+            
+            db.ref('Sensor/readings').on('value', (snapshot) => {
+                const data = snapshot.val();
+                console.log("Raw production data:", data);
+                
+                if (data) {
+                    aggregateProductionData(data);
+                } else {
+                    console.warn("No data found at 'Sensor/readings'");
+                    showError("No production data available");
+                    updateChartPlaceholder("No production data available");
+                    updateProductionTable([]);
                 }
-            ]
-        },
-        options: {
-            scales: {
-                yAxes: [
-                    {
-                        ticks: {
-                            beginAtZero: true,
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Production/Downtime (units)'
-                        },
+            }, (error) => {
+                console.error("Error fetching production data:", error);
+                showError("Failed to load production data");
+                updateChartPlaceholder("Error loading production data");
+                updateProductionTable([]);
+            });
+        }
+
+        // Aggregate production data
+        function aggregateProductionData(rawData) {
+            console.log("Processing production data...");
+            
+            const dailyData = {};
+            let hasValidData = false;
+            
+            Object.keys(rawData).forEach(key => {
+                const entry = rawData[key];
+                
+                // Skip if entry is missing critical fields
+                if (!entry || entry.length === undefined || !entry.timestamp) {
+                    console.warn("Invalid entry skipped:", entry);
+                    return;
+                }
+                
+                // Convert timestamp to date string (YYYY-MM-DD)
+                const timestamp = entry.timestamp > 1000000000000 ? 
+                    new Date(entry.timestamp) : // Already in milliseconds
+                    new Date(entry.timestamp * 1000); // Convert seconds to ms
+                
+                const dateStr = timestamp.toISOString().split('T')[0];
+                const productionValue = parseFloat(entry.length);
+                
+                if (isNaN(productionValue)) {
+                    console.warn("Invalid production value:", entry.length);
+                    return;
+                }
+                
+                // Initialize date entry if it doesn't exist
+                if (!dailyData[dateStr]) {
+                    dailyData[dateStr] = {
+                        firstValue: productionValue,
+                        lastValue: productionValue,
+                        count: 1,
+                        min: productionValue,
+                        max: productionValue
+                    };
+                } else {
+                    // Update daily statistics
+                    dailyData[dateStr].lastValue = productionValue;
+                    dailyData[dateStr].count++;
+                    dailyData[dateStr].min = Math.min(dailyData[dateStr].min, productionValue);
+                    dailyData[dateStr].max = Math.max(dailyData[dateStr].max, productionValue);
+                }
+                
+                hasValidData = true;
+            });
+            
+            if (!hasValidData) {
+                console.warn("No valid production data found after processing");
+                showError("No valid production records found");
+                updateChartPlaceholder("No valid production data");
+                updateProductionTable([]);
+                return;
+            }
+            
+            // Convert to array format for charting
+            const productionData = Object.keys(dailyData).sort().map(date => {
+                const day = dailyData[date];
+                return {
+                    date,
+                    total: day.lastValue - day.firstValue,
+                    average: (day.lastValue - day.firstValue) / day.count,
+                    min: day.min,
+                    max: day.max,
+                    readings: day.count
+                };
+            });
+            
+            console.log("Processed production data:", productionData);
+            updateProductionChart(productionData);
+            updateProductionTable(productionData);
+        }
+
+        // Update production chart
+        function updateProductionChart(productionData) {
+            const ctx = document.getElementById('productionChart').getContext('2d');
+            
+            // Sort data by date
+            productionData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            const dates = productionData.map(item => item.date);
+            const totals = productionData.map(item => item.total);
+            
+            if (productionChart) {
+                productionChart.destroy();
+            }
+            
+            // Only create chart if we have data
+            if (dates.length > 0) {
+                document.getElementById('productionChart').style.display = 'block';
+                document.getElementById('chartPlaceholder').style.display = 'none';
+                
+                productionChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            {
+                                label: 'Actual Production (m)',
+                                data: totals,
+                                backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                            },
+                            {
+                                label: 'Target Production (m)',
+                                data: dates.map(() => lineSpeed || 0),
+                                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                                type: 'line',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 2,
+                                fill: false
+                            }
+                        ]
                     },
-                    {
-                        id: 'efficiency-y-axis',
-                        position: 'right',
-                        ticks: {
-                            beginAtZero: true,
-                            max: 100,
-                            callback: function(value) { return value + "%" }
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Efficiency (%)'
-                        },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Production (meters)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            }
+                        }
                     }
-                ]
-            },
-            elements: {
-                line: {
-                    tension: 0 // Disable bezier curve
-                }
+                });
+            } else {
+                updateChartPlaceholder("No production data available");
             }
         }
-    });
-}
 
+        // Update chart placeholder message
+        function updateChartPlaceholder(message) {
+            document.getElementById('productionChart').style.display = 'none';
+            document.getElementById('chartPlaceholder').style.display = 'block';
+            document.getElementById('chartPlaceholder').textContent = message;
+        }
 
+        // Update production table
+        function updateProductionTable(data) {
+            const tableBody = document.querySelector('#productionTable tbody');
+            tableBody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5">No production data available</td></tr>';
+                return;
+            }
+            
+            data.forEach(day => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${day.date}</td>
+                    <td>${day.total.toFixed(2)}</td>
+                    <td>${day.average.toFixed(2)}</td>
+                    <td>${day.min.toFixed(2)}</td>
+                    <td>${day.max.toFixed(2)}</td>
+                `;
+            });
+        }
 
+        // Fetch downtime data
+        function fetchDowntimeData() {
+            console.log("Fetching downtime data...");
+            
+            db.ref('downtime').on('value', (snapshot) => {
+                const data = snapshot.val();
+                console.log("Raw downtime data:", data);
+                
+                const tableBody = document.querySelector('#downtimeTable tbody');
+                tableBody.innerHTML = '';
+                
+                if (data) {
+                    let hasRecords = false;
+                    
+                    // Clear previous data
+                    downtimeData.dates = [];
+                    downtimeData.types = [];
+                    downtimeData.durations = [];
+                    
+                    Object.keys(data).forEach(date => {
+                        const dateData = data[date];
+                        
+                        // Process all downtime categories
+                        ['noMaterial', 'moldDefective', 'maintenance', 'other'].forEach(category => {
+                            if (dateData[category]) {
+                                Object.keys(dateData[category]).forEach(entryKey => {
+                                    const entry = dateData[category][entryKey];
+                                    if (entry && entry.duration > 0) {
+                                        // Add to table
+                                        const row = tableBody.insertRow();
+                                        row.innerHTML = `
+                                            <td>${date}</td>
+                                            <td>${category.replace(/([A-Z])/g, ' $1').trim()}</td>
+                                            <td>${entry.duration.toFixed(1)}</td>
+                                        `;
+                                        
+                                        // Store for calculations
+                                        downtimeData.dates.push(date);
+                                        downtimeData.types.push(category);
+                                        downtimeData.durations.push(entry.duration);
+                                        
+                                        hasRecords = true;
+                                    }
+                                });
+                            }
+                        });
+                    });
+                    
+                    if (!hasRecords) {
+                        console.warn("No valid downtime records found");
+                        tableBody.innerHTML = '<tr><td colspan="3">No downtime records found</td></tr>';
+                    }
+                } else {
+                    console.warn("No downtime data found");
+                    tableBody.innerHTML = '<tr><td colspan="3">No downtime data available</td></tr>';
+                }
+            }, (error) => {
+                console.error("Error fetching downtime data:", error);
+                showError("Failed to load downtime data");
+                document.querySelector('#downtimeTable tbody').innerHTML = '<tr><td colspan="3" style="color:red;">Error loading downtime data</td></tr>';
+            });
+        }
 
+        // Calculate OEE metrics
+        function updateOEE() {
+            lineSpeed = parseFloat(document.getElementById('lineSpeed').value) || 0;
+            shiftHours = parseFloat(document.getElementById('shiftHours').value) || 8;
+            
+            if (lineSpeed <= 0) {
+                showError("Please enter a valid line speed");
+                return;
+            }
+            
+            // Calculate availability (based on downtime)
+            const totalDowntimeMinutes = downtimeData.durations.reduce((sum, duration) => sum + duration, 0);
+            const plannedProductionTime = shiftHours * 60; // Convert to minutes
+            const operatingTime = plannedProductionTime - totalDowntimeMinutes;
+            const availability = (operatingTime / plannedProductionTime) * 100;
+            
+            // Calculate performance (based on actual vs target production)
+            let performance = 0;
+            if (productionChart && productionChart.data && productionChart.data.datasets[0]) {
+                const productionData = productionChart.data.datasets[0].data;
+                const totalProduction = productionData.reduce((sum, val) => sum + val, 0);
+                const idealProduction = lineSpeed * (productionData.length || 1);
+                performance = (totalProduction / idealProduction) * 100;
+            }
+            
+            // Calculate OEE
+            const oee = (availability * performance) / 100;
+            
+            // Update UI
+            document.getElementById('availability').textContent = availability.toFixed(1) + '%';
+            document.getElementById('performance').textContent = performance.toFixed(1) + '%';
+            document.getElementById('oee').textContent = oee.toFixed(1) + '%';
+            
+            // Update target line in production chart
+            if (productionChart && productionChart.data && productionChart.data.datasets[1]) {
+                productionChart.data.datasets[1].data = productionChart.data.labels.map(() => lineSpeed);
+                productionChart.update();
+            }
+        }
 
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Dashboard initialized");
+            
+            // Set default values
+            document.getElementById('lineSpeed').value = lineSpeed;
+            document.getElementById('shiftHours').value = shiftHours;
+            
+            // Fetch initial data
+            fetchAllData();
+            
+            // Set up auto-refresh (5 minutes)
+            setInterval(fetchAllData, 300000);
+        });
 
-// Call the functions to fetch data
-fetchDowntimeData();
-fetchProductionData();
-</script>
-
+        // Security measures
+        document.addEventListener("contextmenu", (e) => e.preventDefault());
+        document.addEventListener("keydown", (e) => {
+            if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+                e.preventDefault();
+            }
+            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+                e.preventDefault();
+            }
+        });
+        
+        // Auto-logout after 10 minutes of inactivity
+        let logoutTimer;
+        function resetTimer() {
+            clearTimeout(logoutTimer);
+            logoutTimer = setTimeout(() => {
+                window.location.href = "index.html";
+            }, 600000);
+        }
+        
+        ['mousemove', 'keypress', 'click'].forEach(event => {
+            document.addEventListener(event, resetTimer);
+        });
+        resetTimer();
+    </script>
 </body>
 </html>
