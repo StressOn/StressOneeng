@@ -224,13 +224,12 @@ function updateMonthlyTable(monthlyTableBodyId, monthlyTotals) {
     }
 }
 
+
 function fetchProductionData(staff, chartId, tableBodyId, countId, monthlyTableBodyId) {
     const dayWiseTotals = staff === 'StaffA' ? dayWiseTotalsA :
-                          staff === 'StaffB' ? dayWiseTotalsB : dayWiseTotalsC;
+                         staff === 'StaffB' ? dayWiseTotalsB : dayWiseTotalsC;
     const monthlyTotals = staff === 'StaffA' ? monthlyTotalsA :
-                          staff === 'StaffB' ? monthlyTotalsB : monthlyTotalsC;
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                         staff === 'StaffB' ? monthlyTotalsB : monthlyTotalsC;
 
     onValue(staffRefs[staff], (snapshot) => {
         const data = snapshot.val();
@@ -239,69 +238,82 @@ function fetchProductionData(staff, chartId, tableBodyId, countId, monthlyTableB
             return;
         }
 
-        const latestCounts = {};
-        const lastEntryForMonth = {}; // Track the latest entry for each month
-        const years = new Set();      // Collect years dynamically
+        // Clear previous totals
+        Object.keys(dayWiseTotals).forEach(key => delete dayWiseTotals[key]);
+        Object.keys(monthlyTotals).forEach(key => delete monthlyTotals[key]);
 
-        for (const id in data) {
-            const entry = data[id];
-            const date = new Date(entry.timestamp * 1000);
-            const dateKey = date.toLocaleDateString(); // Format: MM/DD/YYYY
-            const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' }); // Format: Jan 2025
-            const year = date.getFullYear();
+        const dailyProduction = {};
+        const monthlyProduction = {};
+        const years = new Set();
+        let totalProductionCount = 0;
 
-            years.add(year); // Track the year dynamically
+        // Sort entries by timestamp
+        const sortedEntries = Object.values(data)
+            .map(entry => ({
+                timestamp: entry.timestamp,
+                count: parseFloat(entry.count.toFixed(1)),
+                date: new Date(entry.timestamp * 1000)
+            }))
+            .sort((a, b) => a.timestamp - b.timestamp);
 
-            const count = (entry.count !== undefined && !isNaN(entry.count)) ? entry.count : 0;
-
-            // Update the latest daily count for each date
-            if (!latestCounts[dateKey] || entry.timestamp > latestCounts[dateKey].timestamp) {
-                latestCounts[dateKey] = { count, timestamp: entry.timestamp };
+        // Group entries by day
+        const entriesByDay = {};
+        sortedEntries.forEach(entry => {
+            const dateKey = entry.date.toLocaleDateString();
+            if (!entriesByDay[dateKey]) {
+                entriesByDay[dateKey] = [];
             }
-
-            // Track the latest count for each month
-            if (!lastEntryForMonth[monthKey] || entry.timestamp > lastEntryForMonth[monthKey].timestamp) {
-                lastEntryForMonth[monthKey] = { count, timestamp: entry.timestamp };
-            }
-        }
-
-        // Initialize monthly totals for all detected years
-        years.forEach(year => {
-            months.forEach(month => {
-                const monthYearKey = `${month} ${year}`;
-                if (!monthlyTotals[monthYearKey]) {
-                    monthlyTotals[monthYearKey] = 0;
-                }
-            });
+            entriesByDay[dateKey].push(entry);
         });
 
-        // Calculate total production count for daily totals
-        let totalProductionCount = 0;
-        for (const date in latestCounts) {
-            const dailyCount = latestCounts[date].count;
-            const monthKey = new Date(date).toLocaleString('default', { month: 'short', year: 'numeric' });
+        // Calculate daily production
+        let previousDayLastCount = 0;
+        Object.keys(entriesByDay).sort().forEach(dateKey => {
+            const dayEntries = entriesByDay[dateKey];
+            const firstCount = dayEntries[0].count;
+            const lastCount = dayEntries[dayEntries.length - 1].count;
+            const date = dayEntries[0].date;
+            const monthKey = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+            years.add(date.getFullYear());
 
-            dayWiseTotals[date] = dailyCount;  // Store daily count
-            totalProductionCount += dailyCount;
-
-            // Update monthly totals without duplicating counts
-            if (!monthlyTotals[monthKey]) {
-                monthlyTotals[monthKey] = 0;
+            // Calculate daily production
+            let dailyCount;
+            if (firstCount < previousDayLastCount) {
+                // Counter reset - treat entire day's count as production
+                dailyCount = lastCount;
+            } else {
+                // Normal case - difference from previous day's last count
+                dailyCount = lastCount - previousDayLastCount;
             }
-            monthlyTotals[monthKey] += dailyCount;
-        }
 
-        // Update UI components
-        document.getElementById(countId).innerHTML = `Total Production Count for ${staff}: ${totalProductionCount}`;
-        updateChart(chartId, dayWiseTotals, staff);
-        updateTable(tableBodyId, dayWiseTotals);
-        updateMonthlyTable(monthlyTableBodyId, monthlyTotals);  // Update the monthly table
+            // Store results
+            dailyProduction[dateKey] = parseFloat(dailyCount.toFixed(1));
+            monthlyProduction[monthKey] = (monthlyProduction[monthKey] || 0) + dailyProduction[dateKey];
+            totalProductionCount += dailyProduction[dateKey];
+            previousDayLastCount = lastCount;
+        });
 
-        // Optional: Log monthly totals to verify correctness
-        console.log("Monthly Totals for", staff, monthlyTotals);
+        // Update totals objects
+        Object.assign(dayWiseTotals, dailyProduction);
+        Object.assign(monthlyTotals, monthlyProduction);
+
+        // Initialize empty months
+        years.forEach(year => {
+            ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                .forEach(month => {
+                    const key = `${month} ${year}`;
+                    if (!monthlyTotals[key]) monthlyTotals[key] = 0;
+                });
+        });
+
+        // Update UI
+        updateProductionDisplay(
+            staff, chartId, tableBodyId, countId, monthlyTableBodyId,
+            dayWiseTotals, monthlyTotals, parseFloat(totalProductionCount.toFixed(1))
+        );
     }, (error) => {
-        console.error(`Error fetching data for ${staff}:`, error);
-        document.getElementById(countId).textContent = `Error loading count for ${staff}.`;
+        console.error(`Error fetching ${staff} data:`, error);
+        document.getElementById(countId).textContent = `Error loading ${staff} data`;
     });
 }
 
@@ -309,6 +321,39 @@ function fetchProductionData(staff, chartId, tableBodyId, countId, monthlyTableB
 
 
 
+function updateProductionDisplay(staff, chartId, tableBodyId, countId, monthlyTableBodyId,
+                              dayWiseTotals, monthlyTotals, totalProductionCount) {
+    // Update total count display
+    document.getElementById(countId).innerHTML = 
+        `Total Production Count for ${staff}: ${totalProductionCount}`;
+    
+    // Update chart
+    updateChart(chartId, dayWiseTotals, staff);
+    
+    // Update daily table
+    const dailyTableBody = document.getElementById(tableBodyId);
+    dailyTableBody.innerHTML = '';
+    Object.entries(dayWiseTotals).forEach(([date, count]) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${date}</td>
+            <td>${count.toFixed(1)}</td>
+        `;
+        dailyTableBody.appendChild(row);
+    });
+    
+    // Update monthly table
+    const monthlyTableBody = document.getElementById(monthlyTableBodyId);
+    monthlyTableBody.innerHTML = '';
+    Object.entries(monthlyTotals).forEach(([month, count]) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${month}</td>
+            <td>${count.toFixed(1)}</td>
+        `;
+        monthlyTableBody.appendChild(row);
+    });
+}
 
 function updateChart(chartId, dayWiseTotals, staff) {
     const ctx = document.getElementById(chartId).getContext('2d');
@@ -425,6 +470,8 @@ function updateChart(chartId, dayWiseTotals, staff) {
 
 
 
+
+
 document.addEventListener("contextmenu", function (e) {
     e.preventDefault(); // Disable right-click menu
 });
@@ -477,6 +524,7 @@ document.addEventListener("click", resetTimer);
 
 // Start the timer when the page loads
 resetTimer();
+
 
     </script>
 </body>
