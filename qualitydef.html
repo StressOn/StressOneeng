@@ -3,529 +3,453 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Production Data</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script> <!-- XLSX import -->
-	<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-
-
-
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0; /* Remove extra spacing */
-        padding: 0;
-    }
-
-    header {
-        background-color: #4CAF50;
-        color: white;
-        padding: 15px 20px;
-        text-align: center;
-    }
-
-    nav {
-        margin: 10px 0;
-        text-align: center; /* Center links */
-    }
-
-    nav a {
-        margin: 0 10px;
-        text-decoration: none;
-        color: #4CAF50;
-        font-weight: bold;
-    }
-
-    .container {
-        display: flex;
-        flex-direction: row; /* Default to side-by-side layout */
-        justify-content: space-between;
-        gap: 20px;
-        margin: 20px;
-    }
-
-    /* Single column for mobile */
-    @media (max-width: 768px) {
-        .container {
-            flex-direction: column; /* Stack items vertically */
-            margin: 10px; /* Reduce margin for smaller screens */
+    <title>Quality Defect Tracking | Systematic Industries</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
         }
-    }
-
-    .chart-container, .table-container {
-        flex: 1;
-        padding: 10px;
-        background-color: #f9f9f9;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    canvas {
-        max-width: 100%;
-    }
-
-    table {
-        width: 100%; /* Full width for the table */
-        border-collapse: collapse;
-    }
-
-    th, td {
-        border: 1px solid #ddd; /* Border for table cells */
-        padding: 8px;
-        text-align: center; /* Center text in cells */
-    }
-
-    th {
-        background-color: #f2f2f2; /* Header background */
-    }
-
-    footer {
-        margin-top: 20px;
-        padding: 10px;
-        text-align: center;
-        background-color: #f1f1f1;
-    }
- /* Back to Main Page Button */
+        
+        header {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 100px auto 80px;
+            padding: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: white;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        
+        h2 {
+            color: #007BFF;
+            margin-top: 0;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 10px;
+        }
+        
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 150px;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            min-height: 400px;
+            margin: 20px 0;
+        }
+        
+        /* Defect type styling */
+        .defect-type {
+            font-weight: bold;
+        }
+        .defect-type.issue_1 { color: #FF6384; }
+        .defect-type.issue_2 { color: #36A2EB; }
+        .defect-type.issue_3 { color: #FFCE56; }
+        
         .back-button {
             position: fixed;
             bottom: 20px;
             right: 20px;
             background-color: #007BFF;
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 50px;
             text-decoration: none;
-            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
             z-index: 1000;
         }
-
+        
         .back-button:hover {
             background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
         }
-</style>
-
-
-
+        
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 80px auto 60px;
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
+            
+            .chart-container {
+                min-height: 300px;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-   <header>
-    <h1>Systematic Industries Ltd- Staff Daily Production</h1>
-</header>
+    <header>
+        <h1>Systematic Industries - Quality Defect Tracking</h1>
+    </header>
 
-<div class="back-button-container">
-    <a href="main.html" class="back-button">Back to Main Page</a>
-</div>
-
-    <div>
-        <h2>Staff A</h2>
-        <div class="container">
-            <div class="chart-container">
-                <canvas id="productionChartA"></canvas>
+    <div class="container">
+        <div class="card">
+            <h2>Quality Defect Summary</h2>
+            
+            <div class="stats-container">
+                <div class="stat-card" style="background-color: #FF6384;">
+                    <div>ISSUE_1 Count</div>
+                    <div class="stat-value" id="issue1Count">0</div>
+                </div>
+                <div class="stat-card" style="background-color: #36A2EB;">
+                    <div>ISSUE_2 Count</div>
+                    <div class="stat-value" id="issue2Count">0</div>
+                </div>
+                <div class="stat-card" style="background-color: #FFCE56;">
+                    <div>ISSUE_3 Count</div>
+                    <div class="stat-value" id="issue3Count">0</div>
+                </div>
+                <div class="stat-card" style="background-color: #007BFF;">
+                    <div>Total Defects</div>
+                    <div class="stat-value" id="totalDefects">0</div>
+                </div>
             </div>
-            <div class="table-container">
-                <p id="countA"></p>
-                <table id="productionTableA">
+            
+            <div class="chart-container">
+                <canvas id="defectiveChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Detailed Defect Records</h2>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table>
                     <thead>
-                        <tr><th>Date</th><th>Count</th></tr>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Staff</th>
+                            <th>Issue Type</th>
+                        </tr>
                     </thead>
-                    <tbody id="productionTableBodyA"></tbody>
+                    <tbody id="defectiveTableBody">
+                        <!-- Data will be populated here -->
+                    </tbody>
                 </table>
-                <button onclick="prepareAndDownloadData('StaffA', dayWiseTotalsA, monthlyTotalsA)">Download Staff A Data</button>
             </div>
         </div>
     </div>
 
-    <div>
-        <h2>Staff B</h2>
-        <div class="container">
-            <div class="chart-container">
-                <canvas id="productionChartB"></canvas>
-            </div>
-            <div class="table-container">
-                <p id="countB"></p>
-                <table id="productionTableB">
-                    <thead>
-                        <tr><th>Date</th><th>Count</th></tr>
-                    </thead>
-                    <tbody id="productionTableBodyB"></tbody>
-                </table>
-                <button onclick="prepareAndDownloadData('StaffB', dayWiseTotalsB, monthlyTotalsB)">Download Staff B Data</button>
-            </div>
-        </div>
-    </div>
-
-    <div>
-        <h2>Staff C</h2>
-        <div class="container">
-            <div class="chart-container">
-                <canvas id="productionChartC"></canvas>
-            </div>
-            <div class="table-container">
-                <p id="countC"></p>
-                <table id="productionTableC">
-                    <thead>
-                        <tr><th>Date</th><th>Count</th></tr>
-                    </thead>
-                    <tbody id="productionTableBodyC"></tbody>
-                </table>
-                <button onclick="prepareAndDownloadData('StaffC', dayWiseTotalsC, monthlyTotalsC)">Download Staff C Data</button>
-            </div>
-        </div>
-    </div>
-
+    <a href="main.html" class="back-button">Back to Dashboard</a>
+    
     <footer>
-    <p>&copy; 2024 StressON Engineering. All rights reserved.</p>
-</footer>
+        <p>&copy; 2025 Systematic Industries Ltd. All rights reserved.</p>
+    </footer>
 
-    <script type="module">
-        // Your existing JavaScript code goes here...
-        const firebaseConfig = {            apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
+    <!-- Firebase and Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
             databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
         };
 
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js';
-        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js';
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        // References to Staff data in Firebase
-        const staffRefs = {
-            StaffA: ref(database, "Staff/StaffA/production"),
-            StaffB: ref(database, "Staff/StaffB/production"),
-            StaffC: ref(database, "Staff/StaffC/production")
+        // Chart variables
+        let defectiveChart;
+        const defectData = {
+            dates: [],
+            counts: [],
+            issue1Counts: [],
+            issue2Counts: [],
+            issue3Counts: []
         };
 
-        // Store production data for each staff
-        window.dayWiseTotalsA = {};
-        window.monthlyTotalsA = {};
-        window.dayWiseTotalsB = {};
-        window.monthlyTotalsB = {};
-        window.dayWiseTotalsC = {};
-        window.monthlyTotalsC = {};
+        // DOM elements
+        const totalDefectsEl = document.getElementById('totalDefects');
+        const issue1CountEl = document.getElementById('issue1Count');
+        const issue2CountEl = document.getElementById('issue2Count');
+        const issue3CountEl = document.getElementById('issue3Count');
+        const tableBody = document.getElementById('defectiveTableBody');
 
-
-function updateMonthlyTable(monthlyTableBodyId, monthlyTotals) {
-    const tableBody = document.getElementById(monthlyTableBodyId);
-    tableBody.innerHTML = ""; // Clear existing table rows
-
-    // Loop through the monthly totals and create table rows
-    for (const month in monthlyTotals) {
-        const row = document.createElement('tr');
-        const monthCell = document.createElement('td');
-        const countCell = document.createElement('td');
-
-        monthCell.textContent = month;
-        countCell.textContent = monthlyTotals[month];
-
-        row.appendChild(monthCell);
-        row.appendChild(countCell);
-        tableBody.appendChild(row);
-    }
-}
-
-
-function fetchProductionData(staff, chartId, tableBodyId, countId, monthlyTableBodyId) {
-    const dayWiseTotals = staff === 'StaffA' ? dayWiseTotalsA :
-                         staff === 'StaffB' ? dayWiseTotalsB : dayWiseTotalsC;
-    const monthlyTotals = staff === 'StaffA' ? monthlyTotalsA :
-                         staff === 'StaffB' ? monthlyTotalsB : monthlyTotalsC;
-
-    onValue(staffRefs[staff], (snapshot) => {
+// Update the fetchQualityDefects function to match your Firebase structure
+function fetchQualityDefects() {
+    const defectsRef = database.ref('qualityDefects');
+    
+    defectsRef.on('value', (snapshot) => {
         const data = snapshot.val();
-        if (!data) {
-            document.getElementById(countId).textContent = "No data found.";
-            return;
+        let totalCount = 0;
+        let issue1Count = 0;
+        let issue2Count = 0;
+        let issue3Count = 0;
+        
+        tableBody.innerHTML = '';
+        defectData.dates = [];
+        defectData.counts = [];
+        defectData.issue1Counts = [];
+        defectData.issue2Counts = [];
+        defectData.issue3Counts = [];
+        
+        // Temporary object to group by date
+        const dateGroups = {};
+        
+        if (data) {
+            // Process each date
+            for (const dateKey in data) {
+                const dateEntries = data[dateKey];
+                
+                // Process each defect entry for this date
+                for (const entryKey in dateEntries) {
+                    const defect = dateEntries[entryKey];
+                    totalCount++;
+                    
+                    const date = new Date(dateKey.replace(/-/g, '/'));
+                    const dateString = date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+                    
+                    if (!dateGroups[dateString]) {
+                        dateGroups[dateString] = {
+                            count: 0,
+                            issue1: 0,
+                            issue2: 0,
+                            issue3: 0
+                        };
+                    }
+                    
+                    // Update counters based on defect type
+                    const issueType = defect.defectType || 'N/A';
+                    dateGroups[dateString].count++;
+                    
+                    if (issueType.includes('1')) {
+                        dateGroups[dateString].issue1++;
+                        issue1Count++;
+                    } else if (issueType.includes('2')) {
+                        dateGroups[dateString].issue2++;
+                        issue2Count++;
+                    } else if (issueType.includes('3')) {
+                        dateGroups[dateString].issue3++;
+                        issue3Count++;
+                    }
+                    
+                    // Add to table
+                    const row = document.createElement('tr');
+                    const defectDate = new Date(defect.timestamp * 1000);
+                    const timeString = defectDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const issueClass = issueType.toLowerCase().replace('_', '-');
+                    
+                    row.innerHTML = `
+                        <td>${dateString}</td>
+                        <td>${timeString}</td>
+                        <td>${defect.staff || 'N/A'}</td>
+                        <td class="defect-type ${issueClass}">${issueType}</td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            }
+            
+            // Prepare chart data - sort by date
+            const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+                return new Date(a) - new Date(b);
+            });
+            
+            for (const date of sortedDates) {
+                defectData.dates.push(date);
+                defectData.counts.push(dateGroups[date].count);
+                defectData.issue1Counts.push(dateGroups[date].issue1);
+                defectData.issue2Counts.push(dateGroups[date].issue2);
+                defectData.issue3Counts.push(dateGroups[date].issue3);
+            }
         }
-
-        // Clear previous totals
-        Object.keys(dayWiseTotals).forEach(key => delete dayWiseTotals[key]);
-        Object.keys(monthlyTotals).forEach(key => delete monthlyTotals[key]);
-
-        const dailyProduction = {};
-        const monthlyProduction = {};
-        const years = new Set();
-        let totalProductionCount = 0;
-
-        // Sort entries by timestamp
-        const sortedEntries = Object.values(data)
-            .map(entry => ({
-                timestamp: entry.timestamp,
-                count: parseFloat(entry.count.toFixed(1)),
-                date: new Date(entry.timestamp * 1000)
-            }))
-            .sort((a, b) => a.timestamp - b.timestamp);
-
-        // Group entries by day
-        const entriesByDay = {};
-        sortedEntries.forEach(entry => {
-            const dateKey = entry.date.toLocaleDateString();
-            if (!entriesByDay[dateKey]) {
-                entriesByDay[dateKey] = [];
-            }
-            entriesByDay[dateKey].push(entry);
-        });
-
-        // Calculate daily production
-        let previousDayLastCount = 0;
-        Object.keys(entriesByDay).sort().forEach(dateKey => {
-            const dayEntries = entriesByDay[dateKey];
-            const firstCount = dayEntries[0].count;
-            const lastCount = dayEntries[dayEntries.length - 1].count;
-            const date = dayEntries[0].date;
-            const monthKey = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
-            years.add(date.getFullYear());
-
-            // Calculate daily production
-            let dailyCount;
-            if (firstCount < previousDayLastCount) {
-                // Counter reset - treat entire day's count as production
-                dailyCount = lastCount;
-            } else {
-                // Normal case - difference from previous day's last count
-                dailyCount = lastCount - previousDayLastCount;
-            }
-
-            // Store results
-            dailyProduction[dateKey] = parseFloat(dailyCount.toFixed(1));
-            monthlyProduction[monthKey] = (monthlyProduction[monthKey] || 0) + dailyProduction[dateKey];
-            totalProductionCount += dailyProduction[dateKey];
-            previousDayLastCount = lastCount;
-        });
-
-        // Update totals objects
-        Object.assign(dayWiseTotals, dailyProduction);
-        Object.assign(monthlyTotals, monthlyProduction);
-
-        // Initialize empty months
-        years.forEach(year => {
-            ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                .forEach(month => {
-                    const key = `${month} ${year}`;
-                    if (!monthlyTotals[key]) monthlyTotals[key] = 0;
-                });
-        });
-
+        
         // Update UI
-        updateProductionDisplay(
-            staff, chartId, tableBodyId, countId, monthlyTableBodyId,
-            dayWiseTotals, monthlyTotals, parseFloat(totalProductionCount.toFixed(1))
-        );
+        totalDefectsEl.textContent = totalCount;
+        issue1CountEl.textContent = issue1Count;
+        issue2CountEl.textContent = issue2Count;
+        issue3CountEl.textContent = issue3Count;
+        updateChart();
     }, (error) => {
-        console.error(`Error fetching ${staff} data:`, error);
-        document.getElementById(countId).textContent = `Error loading ${staff} data`;
+        console.error('Error fetching data:', error);
+        totalDefectsEl.textContent = 'Error';
     });
 }
-
-
-
-
-
-function updateProductionDisplay(staff, chartId, tableBodyId, countId, monthlyTableBodyId,
-                              dayWiseTotals, monthlyTotals, totalProductionCount) {
-    // Update total count display
-    document.getElementById(countId).innerHTML = 
-        `Total Production Count for ${staff}: ${totalProductionCount}`;
-    
-    // Update chart
-    updateChart(chartId, dayWiseTotals, staff);
-    
-    // Update daily table
-    const dailyTableBody = document.getElementById(tableBodyId);
-    dailyTableBody.innerHTML = '';
-    Object.entries(dayWiseTotals).forEach(([date, count]) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${date}</td>
-            <td>${count.toFixed(1)}</td>
-        `;
-        dailyTableBody.appendChild(row);
-    });
-    
-    // Update monthly table
-    const monthlyTableBody = document.getElementById(monthlyTableBodyId);
-    monthlyTableBody.innerHTML = '';
-    Object.entries(monthlyTotals).forEach(([month, count]) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${month}</td>
-            <td>${count.toFixed(1)}</td>
-        `;
-        monthlyTableBody.appendChild(row);
-    });
-}
-
-function updateChart(chartId, dayWiseTotals, staff) {
-    const ctx = document.getElementById(chartId).getContext('2d');
-    const labels = Object.keys(dayWiseTotals);
-    const data = Object.values(dayWiseTotals);
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: `Daily Production Count - ${staff}`,
-                data: data,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                zoom: {
-                    pan: {
-                        enabled: true,  // Enable panning
-                        mode: 'x', // Allows only horizontal panning
-                        threshold: 10 // Minimum drag distance to initiate panning
+        // Initialize or update the chart
+        function updateChart() {
+            const ctx = document.getElementById('defectiveChart').getContext('2d');
+            
+            if (defectiveChart) {
+                defectiveChart.data.labels = defectData.dates;
+                defectiveChart.data.datasets[0].data = defectData.issue1Counts;
+                defectiveChart.data.datasets[1].data = defectData.issue2Counts;
+                defectiveChart.data.datasets[2].data = defectData.issue3Counts;
+                defectiveChart.update();
+            } else {
+                defectiveChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: defectData.dates,
+                        datasets: [
+                            {
+                                label: 'ISSUE_1',
+                                data: defectData.issue1Counts,
+                                backgroundColor: '#FF6384',
+                                borderColor: '#CC526E',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'ISSUE_2',
+                                data: defectData.issue2Counts,
+                                backgroundColor: '#36A2EB',
+                                borderColor: '#2D89C4',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'ISSUE_3',
+                                data: defectData.issue3Counts,
+                                backgroundColor: '#FFCE56',
+                                borderColor: '#E6B949',
+                                borderWidth: 1
+                            }
+                        ]
                     },
-                    zoom: {
-                        wheel: {
-                            enabled: false, // Disable zooming with mouse wheel
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Quality Defects by Type',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            legend: {
+                                position: 'top'
+                            }
                         },
-                        pinch: {
-                            enabled: false, // Disable pinch zooming on touch devices
-                        },
-                        mode: 'x' // Only horizontal zoom (optional)
+                        scales: {
+                            x: {
+                                stacked: false,
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                stacked: false,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Defects'
+                                },
+                                beginAtZero: true
+                            }
+                        }
                     }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Count'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    },
-                    ticks: {
-                        autoSkip: false // Ensures all x-axis labels are shown, modify as necessary
-                    }
-                }
-            }
-        }
-    });
-}
-
-
-
-
-
-        function updateTable(tableBodyId, dayWiseTotals) {
-            const tableBody = document.getElementById(tableBodyId);
-            tableBody.innerHTML = "";
-
-            for (const date in dayWiseTotals) {
-                const row = document.createElement('tr');
-                const dateCell = document.createElement('td');
-                const countCell = document.createElement('td');
-
-                dateCell.textContent = date;
-                countCell.textContent = dayWiseTotals[date];
-
-                row.appendChild(dateCell);
-                row.appendChild(countCell);
-                tableBody.appendChild(row);
+                });
             }
         }
 
-        window.prepareAndDownloadData = function(staffName, dayWiseTotals, monthlyTotals) {
-            if (!dayWiseTotals || Object.keys(dayWiseTotals).length === 0) {
-                alert(`No data available for ${staffName} to download.`);
-                return;
-            }
-
-            const dayWiseData = Object.keys(dayWiseTotals).map(date => ({
-                Date: date,
-                Count: dayWiseTotals[date]
-            }));
-
-            const monthlyData = Object.keys(monthlyTotals).map(month => ({
-                Month: month,
-                Count: monthlyTotals[month]
-            }));
-
-            const workbook = XLSX.utils.book_new();
-            const worksheetDayWise = XLSX.utils.json_to_sheet(dayWiseData);
-            const worksheetMonthly = XLSX.utils.json_to_sheet(monthlyData);
-
-            XLSX.utils.book_append_sheet(workbook, worksheetDayWise, `${staffName} Day Wise`);
-            XLSX.utils.book_append_sheet(workbook, worksheetMonthly, `${staffName} Monthly`);
-
-            XLSX.writeFile(workbook, `${staffName}_Production_Data.xlsx`);
-        };
-
-        document.addEventListener("DOMContentLoaded", () => {
-            fetchProductionData('StaffA', 'productionChartA', 'productionTableBodyA', 'countA');
-            fetchProductionData('StaffB', 'productionChartB', 'productionTableBodyB', 'countB');
-            fetchProductionData('StaffC', 'productionChartC', 'productionTableBodyC', 'countC');
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchQualityDefects();
+            
+            // Auto-refresh every 5 minutes
+            setInterval(fetchQualityDefects, 300000);
         });
-
-
-
-
-
-document.addEventListener("contextmenu", function (e) {
-    e.preventDefault(); // Disable right-click menu
-});
-
-document.addEventListener("keydown", function (e) {
-    // Disable common shortcuts for copying and inspecting elements
-    if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
-        e.preventDefault();
-    }
-
-    // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
-    if (e.key === "F12" || 
-        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
-        e.preventDefault();
-    }
-});
-
-
-document.addEventListener("selectstart", function (e) {
-    e.preventDefault(); // Disable text selection
-});
-
-document.addEventListener("keydown", function (e) {
-    if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) {
-        e.preventDefault();
-    }
-    if (e.ctrlKey && e.key === "P") {
-        e.preventDefault();
-    }
-});
-let logoutTimer;
-
-// Function to reset the logout timer
-function resetTimer() {
-    clearTimeout(logoutTimer); // Clear any existing timer
-    logoutTimer = setTimeout(logoutUser, 120000); // Set new timer for 1 min (60000 ms)
-}
-
-// Function to log out the user
-function logoutUser() {
-    localStorage.setItem("loggedIn", "false"); // Reset login flag
-    window.location.href = "index.html"; // Redirect to login page
-}
-
-// Event listeners for user activity
-document.addEventListener("mousemove", resetTimer);
-document.addEventListener("keypress", resetTimer);
-document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
-document.addEventListener("click", resetTimer);
-
-// Start the timer when the page loads
-resetTimer();
-
-
     </script>
 </body>
 </html>
