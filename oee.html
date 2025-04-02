@@ -239,6 +239,18 @@
             <button onclick="updateOEE()">Calculate OEE</button>
             <button onclick="fetchAllData()" style="margin-left: 10px;">Refresh Data</button>
         </div>
+<div class="input-group">
+    <label for="timePeriod">Time Period:</label>
+    <select id="timePeriod" onchange="updateOEE()">
+        <option value="day">Daily</option>
+        <option value="week">Weekly</option>
+        <option value="month">Monthly</option>
+    </select>
+</div>
+<div class="input-group">
+    <label for="selectedDate">Select Date:</label>
+    <input type="date" id="selectedDate" onchange="updateOEE()">
+</div>
         
         <div class="card">
             <h2>OEE Metrics</h2>
@@ -623,45 +635,102 @@
             });
         }
 
-        // Calculate OEE metrics
-        function updateOEE() {
-            lineSpeed = parseFloat(document.getElementById('lineSpeed').value) || 0;
-            shiftHours = parseFloat(document.getElementById('shiftHours').value) || 8;
-            
-            if (lineSpeed <= 0) {
-                showError("Please enter a valid line speed");
-                return;
+function updateOEE() {
+    lineSpeed = parseFloat(document.getElementById('lineSpeed').value) || 0;
+    shiftHours = parseFloat(document.getElementById('shiftHours').value) || 8;
+    const timePeriod = document.getElementById('timePeriod').value;
+    const selectedDate = document.getElementById('selectedDate').value;
+    
+    if (lineSpeed <= 0) {
+        showError("Please enter a valid line speed");
+        return;
+    }
+    
+    if (!selectedDate) {
+        showError("Please select a date");
+        return;
+    }
+    
+    // Calculate date range based on selected period
+    const date = new Date(selectedDate);
+    let startDate, endDate;
+    
+    if (timePeriod === 'day') {
+        startDate = new Date(date);
+        endDate = new Date(date);
+    } else if (timePeriod === 'week') {
+        // Get start of week (Sunday)
+        startDate = new Date(date);
+        startDate.setDate(date.getDate() - date.getDay());
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+    } else { // month
+        startDate = new Date(date.getFullYear(), date.getMonth(), 1);
+        endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    }
+    
+    // Format dates for comparison (YYYY-MM-DD)
+    const formatDate = d => d.toISOString().split('T')[0];
+    
+    // Filter production data for selected period
+    let filteredProduction = [];
+    if (productionChart && productionChart.data && productionChart.data.datasets[0]) {
+        productionChart.data.labels.forEach((label, index) => {
+            const chartDate = new Date(label);
+            if (chartDate >= startDate && chartDate <= endDate) {
+                filteredProduction.push(productionChart.data.datasets[0].data[index]);
             }
-            
-            // Calculate availability (based on downtime)
-            const totalDowntimeMinutes = downtimeData.durations.reduce((sum, duration) => sum + duration, 0);
-            const plannedProductionTime = shiftHours * 60; // Convert to minutes
-            const operatingTime = plannedProductionTime - totalDowntimeMinutes;
-            const availability = (operatingTime / plannedProductionTime) * 100;
-            
-            // Calculate performance (based on actual vs target production)
-            let performance = 0;
-            if (productionChart && productionChart.data && productionChart.data.datasets[0]) {
-                const productionData = productionChart.data.datasets[0].data;
-                const totalProduction = productionData.reduce((sum, val) => sum + val, 0);
-                const idealProduction = lineSpeed * (productionData.length || 1);
-                performance = (totalProduction / idealProduction) * 100;
-            }
-            
-            // Calculate OEE
-            const oee = (availability * performance) / 100;
-            
-            // Update UI
-            document.getElementById('availability').textContent = availability.toFixed(1) + '%';
-            document.getElementById('performance').textContent = performance.toFixed(1) + '%';
-            document.getElementById('oee').textContent = oee.toFixed(1) + '%';
-            
-            // Update target line in production chart
-            if (productionChart && productionChart.data && productionChart.data.datasets[1]) {
-                productionChart.data.datasets[1].data = productionChart.data.labels.map(() => lineSpeed);
-                productionChart.update();
-            }
+        });
+    }
+    
+    // Filter downtime for selected period
+    let filteredDowntime = 0;
+    downtimeData.dates.forEach((dateStr, index) => {
+        const downtimeDate = new Date(dateStr);
+        if (downtimeDate >= startDate && downtimeDate <= endDate) {
+            filteredDowntime += downtimeData.durations[index];
         }
+    });
+    
+    // Calculate metrics
+    const daysInPeriod = timePeriod === 'day' ? 1 : 
+                         timePeriod === 'week' ? 7 : 
+                         (endDate.getDate() - startDate.getDate() + 1);
+    
+    const plannedProductionTime = shiftHours * 60 * daysInPeriod;
+    const operatingTime = plannedProductionTime - filteredDowntime;
+    const availability = (operatingTime / plannedProductionTime) * 100;
+    
+    const totalProduction = filteredProduction.reduce((sum, val) => sum + val, 0);
+    const idealProduction = lineSpeed * daysInPeriod;
+    const performance = (totalProduction / idealProduction) * 100;
+    
+    const oee = (availability * performance) / 100;
+    
+    // Update UI
+    document.getElementById('availability').textContent = availability.toFixed(1) + '%';
+    document.getElementById('performance').textContent = performance.toFixed(1) + '%';
+    document.getElementById('oee').textContent = oee.toFixed(1) + '%';
+    
+    // Update period display
+    const periodDisplay = timePeriod === 'day' ? formatDate(startDate) :
+                         `${formatDate(startDate)} to ${formatDate(endDate)}`;
+    document.querySelectorAll('.metric-card div:last-child').forEach(el => {
+        el.textContent = `For ${periodDisplay}`;
+    });
+    
+    // Update target line in chart
+    if (productionChart && productionChart.data && productionChart.data.datasets[1]) {
+        productionChart.data.datasets[1].data = productionChart.data.labels.map(() => {
+            const labelDate = new Date(productionChart.data.labels[0]);
+            return (labelDate >= startDate && labelDate <= endDate) ? lineSpeed : null;
+        });
+        productionChart.update();
+    }
+}
+
+// Add this to the DOMContentLoaded event listener to set default date:
+document.getElementById('selectedDate').valueAsDate = new Date();
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
