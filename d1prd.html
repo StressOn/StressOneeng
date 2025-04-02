@@ -243,6 +243,10 @@
                     <strong>Machine Status</strong>
                     <div id="machineStatus">N/A</div>
                 </div>
+		<div class="info-box">
+   		 <strong>Machine Speed</strong>
+   		 <div id="machineSpeed">N/A</div>
+		</div>
             </div>
         </div>
 
@@ -526,27 +530,38 @@ function calculateMonthlyProductionFromChart() {
 // Initialize variables
 let lastKnownLength = localStorage.getItem('lastKnownLength') || null;
 let lastKnownTimestamp = localStorage.getItem('lastKnownTimestamp') || null;
+let lastSpeedUpdateTime = null;
 
 // Listen for Firebase updates
 var sensorRef = database.ref('Sensor/readings');
 sensorRef.limitToLast(1).on('child_added', function(snapshot) {
     var data = snapshot.val();
-    var latestValue = parseFloat(data.length).toFixed(2); // Ensure 2 decimal precision
-    var latestTimestamp = data.timestamp * 1000; // Convert to milliseconds
+    var latestValue = parseFloat(data.length).toFixed(2);
+    var latestTimestamp = data.timestamp * 1000;
     
     // Update display values
     document.getElementById("lastValueDisplay").innerText = latestValue;
     var minutesAgo = Math.floor((Date.now() - latestTimestamp) / (1000 * 60));
     document.getElementById("lastUpdateDisplay").innerText = minutesAgo + " minutes ago";
 
-    // Calculate time difference in minutes
-    var minutesSinceUpdate = (Date.now() - latestTimestamp) / (1000 * 60);
+    // Calculate speed if we have previous data
+    if (lastKnownLength !== null && lastKnownTimestamp !== null) {
+        const lengthDifference = latestValue - lastKnownLength;
+        const timeDifference = (latestTimestamp - lastKnownTimestamp) / 1000;
+        
+        if (timeDifference > 0 && timeDifference < 300) {
+            const speed = (lengthDifference / timeDifference) * 60;
+            document.getElementById("machineSpeed").innerText = speed.toFixed(2) + " M/min";
+            lastSpeedUpdateTime = Date.now();
+        }
+    }
     
-    // Debug logs (remove after testing)
-    console.log("Last:", lastKnownLength, "Current:", latestValue, "Changed:", 
-               lastKnownLength !== null && parseFloat(lastKnownLength).toFixed(2) !== latestValue);
-    
+    if (lastSpeedUpdateTime && (Date.now() - lastSpeedUpdateTime) > 300000) {
+        document.getElementById("machineSpeed").innerText = "N/A";
+    }
+
     // Determine machine status
+    var minutesSinceUpdate = (Date.now() - latestTimestamp) / (1000 * 60);
     var newStatus;
     if (minutesSinceUpdate > 5) {
         newStatus = "Offline";
@@ -757,7 +772,7 @@ resetTimer();
 
     document.addEventListener("keydown", function(event) {
         // Disable F12, Ctrl+Shift+I, Ctrl+U
-        if (event.key === "F12" || 
+        if (event.key === "F11" || 
             (event.ctrlKey && event.shiftKey && event.key === "I") || 
             (event.ctrlKey && event.key === "U")) {
             event.preventDefault();
