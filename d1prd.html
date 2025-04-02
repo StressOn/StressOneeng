@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Production Monitoring Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Firebase & Chart.js -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -78,21 +79,62 @@
         grid-template-columns: repeat(4, 1fr); /* Increased columns to 4 */
         gap: 30px; /* Larger gap for spacious layout */
     }
+/* Colorful Info Box Styling */
+.info-box {
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    transition: transform 0.2s;
+    color: white; /* White text for better contrast */
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
-    /* Info Box Styling */
-    .info-box {
-        padding: 30px; /* More padding for better spacing */
-        background-color: #fafafa;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        text-align: center;
-        transition: transform 0.2s;
-    }
+.info-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
 
-    .info-box:hover {
-        transform: translateY(-5px); /* Lift effect */
-        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2); /* Stronger shadow */
-    }
+/* Individual Box Colors */
+.info-box:nth-child(1) {  /* Finished Length */
+    background: linear-gradient(135deg, #4e54c8, #8f94fb); /* Purple */
+    border-left: 5px solid #3a3f9e;
+}
+
+.info-box:nth-child(2) {  /* Last Update */
+    background: linear-gradient(135deg, #11998e, #38ef7d); /* Teal */
+    border-left: 5px solid #0a6e5d;
+}
+
+.info-box:nth-child(3) {  /* Reset Production */
+    background: linear-gradient(135deg, #f46b45, #eea849); /* Orange */
+    border-left: 5px solid #d35400;
+}
+
+.info-box:nth-child(4) {  /* Yesterday Production */
+    background: linear-gradient(135deg, #00c6ff, #0072ff); /* Bright Blue */
+    border-left: 5px solid #0062cc;
+}
+
+.info-box:nth-child(5) {  /* Month Production */
+    background: linear-gradient(135deg, #ff416c, #ff4b2b); /* Pink/Red */
+    border-left: 5px solid #c0392b;
+}
+
+.info-box:nth-child(6) {  /* Machine Status */
+    background: linear-gradient(135deg, #556270, #4ecdc4); /* Gray/Teal */
+    border-left: 5px solid #2c3e50;
+}
+
+.info-box:nth-child(7) {  /* Machine Speed */
+    background: linear-gradient(135deg, #8e2de2, #4a00e0); /* Deep Purple */
+    border-left: 5px solid #6a1b9a;
+}
+
+/* Status-Specific Colors (for Machine Status) */
+.Running { color: #2ecc71; }  /* Green */
+.Stopped { color: #e74c3c; }  /* Red */
+.Offline { color: #f39c12; }  /* Yellow */
 
     /* Chart Container Styling */
     .chart-container {
