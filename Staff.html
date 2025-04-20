@@ -102,6 +102,37 @@
         .back-button:hover {
             background-color: #0056b3;
         }
+/* Container for scrollable table */
+.table-container {
+    max-height: 300px; /* Adjust based on row height (10 rows) */
+    overflow-y: auto;  /* Enable vertical scroll */
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+/* Sticky header (optional) */
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-container thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+/* Table styling */
+.table-container td, .table-container th {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.table-container tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
 </style>
 
 
@@ -360,13 +391,25 @@ function updateChart(chartId, dayWiseTotals, staff) {
     const labels = Object.keys(dayWiseTotals);
     const data = Object.values(dayWiseTotals);
 
-    new Chart(ctx, {
+    // Sort dates in ascending order (assuming format: "YYYY-MM-DD")
+    labels.sort((a, b) => new Date(a) - new Date(b));
+    const sortedData = labels.map(label => dayWiseTotals[label]);
+
+    // Calculate the last 5 days
+    const last5Days = labels.slice(-5); // Get last 5 labels
+    const last5DaysData = sortedData.slice(-5); // Get last 5 data points
+
+    // Destroy previous chart if it exists
+    if (window.myCharts === undefined) window.myCharts = {};
+    if (window.myCharts[chartId]) window.myCharts[chartId].destroy();
+
+    window.myCharts[chartId] = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: labels, // All labels (for panning)
             datasets: [{
                 label: `Daily Production Count - ${staff}`,
-                data: data,
+                data: sortedData, // All data (for panning)
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
@@ -377,36 +420,32 @@ function updateChart(chartId, dayWiseTotals, staff) {
             plugins: {
                 zoom: {
                     pan: {
-                        enabled: true,  // Enable panning
-                        mode: 'x', // Allows only horizontal panning
-                        threshold: 10 // Minimum drag distance to initiate panning
+                        enabled: true,
+                        mode: 'x',
+                        threshold: 10,
+                        rangeMin: { x: 0 }, // Start of data
+                        rangeMax: { x: labels.length - 1 } // End of data
                     },
                     zoom: {
-                        wheel: {
-                            enabled: false, // Disable zooming with mouse wheel
-                        },
-                        pinch: {
-                            enabled: false, // Disable pinch zooming on touch devices
-                        },
-                        mode: 'x' // Only horizontal zoom (optional)
+                        wheel: { enabled: false },
+                        pinch: { enabled: false },
+                        mode: 'x'
                     }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Count'
-                    }
+                    title: { display: true, text: 'Count' }
                 },
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    },
+                    title: { display: true, text: 'Date' },
+                    min: last5Days[0], // First of last 5 days
+                    max: last5Days[last5Days.length - 1], // Last of last 5 days
                     ticks: {
-                        autoSkip: false // Ensures all x-axis labels are shown, modify as necessary
+                        autoSkip: false,
+                        maxRotation: 45,
+                        minRotation: 45
                     }
                 }
             }
@@ -415,27 +454,29 @@ function updateChart(chartId, dayWiseTotals, staff) {
 }
 
 
+function updateTable(tableBodyId, dayWiseTotals) {
+    const tableBody = document.getElementById(tableBodyId);
+    tableBody.innerHTML = "";
 
+    // Convert object to array of {date, count} and sort by date (newest first)
+    const sortedEntries = Object.entries(dayWiseTotals)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date)); // Newest first
 
+    // Add rows (only first 10 visible, rest scrollable)
+    sortedEntries.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        const dateCell = document.createElement('td');
+        const countCell = document.createElement('td');
 
-        function updateTable(tableBodyId, dayWiseTotals) {
-            const tableBody = document.getElementById(tableBodyId);
-            tableBody.innerHTML = "";
+        dateCell.textContent = entry.date;
+        countCell.textContent = entry.count;
 
-            for (const date in dayWiseTotals) {
-                const row = document.createElement('tr');
-                const dateCell = document.createElement('td');
-                const countCell = document.createElement('td');
-
-                dateCell.textContent = date;
-                countCell.textContent = dayWiseTotals[date];
-
-                row.appendChild(dateCell);
-                row.appendChild(countCell);
-                tableBody.appendChild(row);
-            }
-        }
-
+        row.appendChild(dateCell);
+        row.appendChild(countCell);
+        tableBody.appendChild(row);
+    });
+}
         window.prepareAndDownloadData = function(staffName, dayWiseTotals, monthlyTotals) {
             if (!dayWiseTotals || Object.keys(dayWiseTotals).length === 0) {
                 alert(`No data available for ${staffName} to download.`);
