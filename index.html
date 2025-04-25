@@ -103,9 +103,9 @@
 
     <script>
         // Predefined login credentials
-const defaultUsername = 'PLACEHOLDER_USERNAME';  // Will be replaced by GitHub Actions
-const defaultPassword = 'PLACEHOLDER_PASSWORD';
-
+        const defaultUsername = '${DASHBOARD_USERNAME}';
+        const defaultPassword = '${DASHBOARD_PASSWORD}';
+        
         // Check if user is already logged in
         if (localStorage.getItem("loggedIn") === "true") {
             window.location.href = 'main.html';  // Redirect to main page if already logged in
