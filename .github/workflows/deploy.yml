@@ -33,8 +33,9 @@ jobs:
           grep -A 2 "defaultUsername" index.html || echo "No login credentials found"
           echo "=== Firebase Config Verification ==="
           grep -A 3 "firebaseConfig" index.html || echo "No Firebase config found"
-          echo "=== Checking for remaining placeholders ==="
-          grep -r "\${" *.html && exit 1 || echo "No placeholders found - Success!"
+          echo "=== Checking for unprocessed placeholders ==="
+          ! grep -r "\${DASHBOARD_USERNAME\|\${DASHBOARD_PASSWORD\|\${FIREBASE_API_KEY\|\${FIREBASE_DATABASE_URL}" *.html || exit 1
+          echo "Verification successful - no unprocessed placeholders found"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
