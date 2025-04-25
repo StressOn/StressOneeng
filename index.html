@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Systematic Industries Ltd - IoT Dashboard Login</title>
+    <style>
+        /* General reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Body styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f3f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+
+        /* Container for the form */
+        .login-container {
+            background-color: #ffffff;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Company branding */
+        .login-container h1 {
+            color: #007BFF;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        .login-container p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* Input field styling */
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        /* Button styling */
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Error message styling */
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h1>Welcome to Systematic Industries Ltd</h1>
+        <p>Log in to access the IoT Dashboard</p>
+
+        <!-- Input fields for username and password (empty by default) -->
+        <input type="text" id="usernameInput" placeholder="Username">
+        <input type="password" id="passwordInput" placeholder="Password">
+        
+        <button id="loginButton">Log In</button>
+
+        <!-- Error message -->
+        <div class="error-message" id="errorMessage">
+            Incorrect username or password. Please try again.
+        </div>
+    </div>
+
+    <script>
+        // Predefined login credentials
+        const defaultUsername = 'sys';
+        const defaultPassword = '1234';
+
+        // Check if user is already logged in
+        if (localStorage.getItem("loggedIn") === "true") {
+            window.location.href = 'main.html';  // Redirect to main page if already logged in
+        }
+
+        // Function to handle login
+        function handleLogin() {
+            const username = document.getElementById('usernameInput').value;
+            const password = document.getElementById('passwordInput').value;
+
+            // If credentials are correct
+            if (username === defaultUsername && password === defaultPassword) {
+                alert('Login successful!');
+                localStorage.setItem("loggedIn", "true"); // Set login flag
+                window.location.href = 'main.html';  // Redirect to main page
+            } else {
+                // Show the error message
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        // Handle login button click
+        document.getElementById('loginButton').addEventListener('click', handleLogin);
+
+        // Handle Enter key press in input fields
+        document.getElementById('usernameInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+
+        document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+
+        // Security measures
+        document.addEventListener("contextmenu", function (e) {
+            e.preventDefault(); // Disable right-click menu
+        });
+
+        document.addEventListener("keydown", function (e) {
+            // Disable common shortcuts for copying and inspecting elements
+            if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+                e.preventDefault();
+            }
+
+            // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+            if (e.key === "F12" || 
+                (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+                e.preventDefault();
+            }
+        });
+
+        (function() {
+            function devToolsDetection() {
+                let start = performance.now();
+                debugger; // Triggers if DevTools is open
+                let end = performance.now();
+                if (end - start > 100) { // DevTools slows execution
+                    window.location.href = "about:blank"; // Redirect to a blank page
+                }
+            }
+            setInterval(devToolsDetection, 1000); // Run check every second
+        })();
+    </script>
+</body>
+</html>

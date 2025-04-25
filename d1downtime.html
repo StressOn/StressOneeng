@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StressON Engineering - Device Downtime</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f0f4ff, #e6eef8);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            margin-top: 100px;
+            margin-bottom: 100px;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding: 10px;
+                margin-bottom: 120px;
+            }
+        }
+
+        .downtime-box {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            width: 30%;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .downtime-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .downtime-box {
+                width: 100%;
+            }
+        }
+
+        .downtime-box h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #007BFF;
+        }
+
+ /* Back to Main Page Button */
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+
+        .combined-table-container {
+            margin-top: 25px;
+            text-align: center;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .combined-table-container {
+                width: 100%;
+                padding: 10px;
+            }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        th {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            text-align: center;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        .export-button {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin-top: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+
+        .export-button:hover {
+            background: linear-gradient(135deg, #0056b3, #007BFF);
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Systematic Industries Ltd</h1>
+    </header>
+
+    <div class="container">
+        <div class="downtime-box">
+            <h2>No Material Downtime</h2>
+            <canvas id="noMaterialDowntimeChart" width="150" height="150"></canvas>
+        </div>
+
+        <div class="downtime-box">
+            <h2>Mold Defective Downtime</h2>
+            <canvas id="moldDefectiveDowntimeChart" width="150" height="150"></canvas>
+        </div>
+
+        <div class="downtime-box">
+            <h2>Maintenance Downtime</h2>
+            <canvas id="maintenanceDowntimeChart" width="150" height="150"></canvas>
+        </div>
+    </div>
+
+    <div class="combined-table-container">
+        <h2>Combined Downtime (All Categories)</h2>
+        <div style="max-height: 160px; overflow-y: auto;">
+            <table id="combinedDowntimeTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Total Downtime (Minutes)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be inserted here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button class="back-button" onclick="window.location.href='main.html'">Back to Page</button>
+    <button id="exportButton" class="export-button">Export to Excel</button>
+
+    <footer>
+        <p>&copy; 2025 Systematic Industries Ltd. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
+            databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Function to fetch and process downtime data
+        async function fetchDowntimeData() {
+            try {
+                // Get the current date to organize data by month
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed
+                const currentYear = currentDate.getFullYear();
+                
+                // Reference to the downtime data in Firebase
+                const downtimeRef = database.ref('downtime');
+                
+                // Fetch all downtime data
+                const snapshot = await downtimeRef.once('value');
+                const downtimeData = snapshot.val();
+                
+                // Initialize data structures
+                const dateMap = new Map(); // To store combined data by date
+                const categoryData = {
+                    noMaterial: { labels: [], durations: [] },
+                    moldDefective: { labels: [], durations: [] },
+                    maintenance: { labels: [], durations: [] }
+                };
+                
+                // Process each date in the downtime data
+                for (const dateKey in downtimeData) {
+                    if (downtimeData.hasOwnProperty(dateKey)) {
+                        const dateData = downtimeData[dateKey];
+                        
+                        // Process each category for this date
+                        for (const category in dateData) {
+                            if (dateData.hasOwnProperty(category)) {
+                                const entries = dateData[category];
+                                
+                                // Calculate total duration for this category on this date
+                                let totalDuration = 0;
+                                for (const entryKey in entries) {
+                                    if (entries.hasOwnProperty(entryKey)) {
+                                        const entry = entries[entryKey];
+                                        if (entry.duration) {
+                                            totalDuration += entry.duration;
+                                        }
+                                    }
+                                }
+                                
+                                // Add to the appropriate category data
+                                switch(category) {
+                                    case 'noMaterial':
+                                        categoryData.noMaterial.labels.push(dateKey);
+                                        categoryData.noMaterial.durations.push(totalDuration);
+                                        break;
+                                    case 'moldDefective':
+                                        categoryData.moldDefective.labels.push(dateKey);
+                                        categoryData.moldDefective.durations.push(totalDuration);
+                                        break;
+                                    case 'maintenance':
+                                        categoryData.maintenance.labels.push(dateKey);
+                                        categoryData.maintenance.durations.push(totalDuration);
+                                        break;
+                                }
+                                
+                                // Update combined data
+                                if (!dateMap.has(dateKey)) {
+                                    dateMap.set(dateKey, {
+                                        noMaterial: 0,
+                                        moldDefective: 0,
+                                        maintenance: 0,
+                                        total: 0
+                                    });
+                                }
+                                
+                                const dateEntry = dateMap.get(dateKey);
+                                dateEntry[category] = totalDuration;
+                                dateEntry.total += totalDuration;
+                            }
+                        }
+                    }
+                }
+                
+                // Sort dates chronologically
+                const sortedDates = Array.from(dateMap.keys()).sort((a, b) => {
+                    return new Date(a) - new Date(b);
+                });
+                
+                // Prepare combined data for table
+                const combinedTableData = sortedDates.map(date => {
+                    const entry = dateMap.get(date);
+                    return {
+                        date,
+                        total: entry.total
+                    };
+                });
+                
+                return {
+                    categoryData,
+                    combinedTableData,
+                    sortedDates,
+                    dateMap
+                };
+                
+            } catch (error) {
+                console.error("Error fetching downtime data:", error);
+                return {
+                    categoryData: {
+                        noMaterial: { labels: [], durations: [] },
+                        moldDefective: { labels: [], durations: [] },
+                        maintenance: { labels: [], durations: [] }
+                    },
+                    combinedTableData: [],
+                    sortedDates: [],
+                    dateMap: new Map()
+                };
+            }
+        }
+
+        // Function to initialize charts and table
+        function initializeUI(data) {
+            // Initialize individual charts
+            createChart('noMaterialDowntimeChart', 
+                        data.categoryData.noMaterial.labels, 
+                        data.categoryData.noMaterial.durations, 
+                        'No Material Downtime',
+                        'rgba(54, 162, 235, 0.6)');
+            
+            createChart('moldDefectiveDowntimeChart', 
+                        data.categoryData.moldDefective.labels, 
+                        data.categoryData.moldDefective.durations, 
+                        'Mold Defective Downtime',
+                        'rgba(255, 99, 132, 0.6)');
+            
+            createChart('maintenanceDowntimeChart', 
+                        data.categoryData.maintenance.labels, 
+                        data.categoryData.maintenance.durations, 
+                        'Maintenance Downtime',
+                        'rgba(75, 192, 192, 0.6)');
+            
+            // Populate combined table
+            const tableBody = document.querySelector('#combinedDowntimeTable tbody');
+            tableBody.innerHTML = '';
+            
+            data.combinedTableData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.total.toFixed(1)} minutes</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Set up export functionality
+            document.getElementById('exportButton').addEventListener('click', () => {
+                exportToExcel(data);
+            });
+        }
+
+        // Function to create a chart
+        function createChart(chartId, labels, data, labelName, backgroundColor) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: labelName,
+                        backgroundColor: backgroundColor,
+                        borderColor: backgroundColor.replace('0.6', '1'),
+                        borderWidth: 1,
+                        data: data
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x'
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Minutes'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to export data to Excel
+        function exportToExcel(data) {
+            const exportData = data.sortedDates.map(date => {
+                const entry = data.dateMap.get(date);
+                return {
+                    'Date': date,
+                    'No Material (min)': entry.noMaterial,
+                    'Mold Defective (min)': entry.moldDefective,
+                    'Maintenance (min)': entry.maintenance,
+                    'Total Downtime (min)': entry.total
+                };
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Downtime Report");
+            XLSX.writeFile(workbook, `Downtime_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        // Main initialization
+        document.addEventListener('DOMContentLoaded', async () => {
+            const data = await fetchDowntimeData();
+            initializeUI(data);
+            
+            // Set up auto-refresh every 5 minutes
+            setInterval(async () => {
+                const newData = await fetchDowntimeData();
+                initializeUI(newData);
+            }, 300000); // 5 minutes in milliseconds
+        });
+
+        // Security measures (your existing code remains the same)
+        document.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+        });
+
+
+document.addEventListener("contextmenu", function (e) {
+    e.preventDefault(); // Disable right-click menu
+});
+
+document.addEventListener("keydown", function (e) {
+    // Disable common copy shortcuts: Ctrl+C, Ctrl+X, Ctrl+U, and Ctrl+S
+    if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener("selectstart", function (e) {
+    e.preventDefault(); // Disable text selection
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) {
+        e.preventDefault();
+    }
+    if (e.ctrlKey && e.key === "P") {
+        e.preventDefault();
+    }
+    // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+    if (e.key === "F12" || 
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+        e.preventDefault();
+    }
+});
+
+let logoutTimer;
+
+// Function to reset the logout timer
+function resetTimer() {
+    clearTimeout(logoutTimer); // Clear any existing timer
+    logoutTimer = setTimeout(logoutUser, 600000); // Set new timer for 1 min (60000 ms)
+}
+
+// Function to log out the user
+function logoutUser() {
+    localStorage.setItem("loggedIn", "false"); // Reset login flag
+    window.location.href = "index.html"; // Redirect to login page
+}
+
+// Event listeners for user activity
+document.addEventListener("mousemove", resetTimer);
+document.addEventListener("keypress", resetTimer);
+document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
+document.addEventListener("click", resetTimer);
+
+// Start the timer when the page loads
+resetTimer();
+
+
+    </script>
+</body>
+</html>
