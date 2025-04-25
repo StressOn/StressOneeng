@@ -15,16 +15,11 @@ jobs:
       - name: Install envsubst
         run: sudo apt-get install -y gettext
 
-      - name: Replace credentials in all HTML files
+      - name: Replace credentials
         run: |
           for file in *.html; do
             echo "Processing $file..."
             envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"
-            # Verify replacements
-            echo "=== Login Credentials ==="
-            grep -A 2 "defaultUsername" "$file" || true
-            echo "=== Firebase Config ==="
-            grep -A 3 "firebaseConfig" "$file" || true
           done
         env:
           DASHBOARD_USERNAME: ${{ secrets.DASHBOARD_USERNAME }}
@@ -34,9 +29,12 @@ jobs:
 
       - name: Verify replacements
         run: |
-          echo "=== Final Verification ==="
-          grep -A 2 "defaultUsername" index.html
-          grep -A 3 "firebaseConfig" index.html
+          echo "=== Login Credentials Verification ==="
+          grep -A 2 "defaultUsername" index.html || echo "No login credentials found"
+          echo "=== Firebase Config Verification ==="
+          grep -A 3 "firebaseConfig" index.html || echo "No Firebase config found"
+          echo "=== Checking for remaining placeholders ==="
+          grep -r "\${" *.html && exit 1 || echo "No placeholders found - Success!"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
