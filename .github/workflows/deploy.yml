@@ -2,29 +2,33 @@ name: Deploy with Secret Credentials
 
 on:
   push:
-    branches: [main]  # Runs on every push to the main branch
+    branches: [main]
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # Uses a clean Ubuntu Linux environment
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Replace placeholders with secrets
-     - name: Inject credentials
-  run: |
-    # Escape special characters in replacements
-    sed -i "s|PLACEHOLDER_USERNAME|$(echo '${{ secrets.DASHBOARD_USERNAME }}' | sed 's/[\/&]/\\&/g')|g" index.html
-    sed -i "s|PLACEHOLDER_PASSWORD|$(echo '${{ secrets.DASHBOARD_PASSWORD }}' | sed 's/[\/&]/\\&/g')|g" index.html
-    sed -i "s|FIREBASE_API_KEY_PLACEHOLDER|$(echo '${{ secrets.FIREBASE_API_KEY }}' | sed 's/[\/&]/\\&/g')|g" *.html
-    sed -i "s|FIREBASE_DATABASE_URL_PLACEHOLDER|$(echo '${{ secrets.FIREBASE_DATABASE_URL }}' | sed 's/[\/&]/\\&/g')|g" *.html
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      # Step 3: Deploy to GitHub Pages
+      - name: Install replace-in-file
+        run: npm install -g replace-in-file
+
+      - name: Inject credentials
+        run: |
+          replace-in-file 'PLACEHOLDER_USERNAME' '${{ secrets.DASHBOARD_USERNAME }}' index.html
+          replace-in-file 'PLACEHOLDER_PASSWORD' '${{ secrets.DASHBOARD_PASSWORD }}' index.html
+          replace-in-file 'FIREBASE_API_KEY_PLACEHOLDER' '${{ secrets.FIREBASE_API_KEY }}' *.html
+          replace-in-file 'FIREBASE_DATABASE_URL_PLACEHOLDER' '${{ secrets.FIREBASE_DATABASE_URL }}' *.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./  # Deploys all files in the root directory
+          publish_dir: ./
