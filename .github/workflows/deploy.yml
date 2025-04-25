@@ -1,0 +1,27 @@
+name: Deploy with Secret Credentials
+
+on:
+  push:
+    branches: [ main ]  # Runs on every push to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Uses a clean Ubuntu Linux environment
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Replace placeholders with secrets
+      - name: Inject credentials
+        run: |
+          sed -i "s/PLACEHOLDER_USERNAME/${{ secrets.DASHBOARD_USERNAME }}/g" index.html
+          sed -i "s/PLACEHOLDER_PASSWORD/${{ secrets.DASHBOARD_PASSWORD }}/g" index.html
+
+      # Step 3: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./  # Deploys all files in the root directory
