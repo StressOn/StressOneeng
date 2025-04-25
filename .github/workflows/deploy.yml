@@ -18,6 +18,9 @@ jobs:
         run: |
           sed -i "s/PLACEHOLDER_USERNAME/${{ secrets.DASHBOARD_USERNAME }}/g" index.html
           sed -i "s/PLACEHOLDER_PASSWORD/${{ secrets.DASHBOARD_PASSWORD }}/g" index.html
+          # Add these lines to replace Firebase config in ALL pages
+    sed -i "s/FIREBASE_API_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" *.html
+    sed -i "s/FIREBASE_DATABASE_URL_PLACEHOLDER/${{ secrets.FIREBASE_DATABASE_URL }}/g" *.html
 
       # Step 3: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
