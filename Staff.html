@@ -332,7 +332,7 @@ function fetchProductionData(staff, chartId, tableBodyId, countId, monthlyTableB
         years.forEach(year => {
             ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
                 .forEach(month => {
-                    const key = ` `;
+                    const key = `${month} ${year}`;
                     if (!monthlyTotals[key]) monthlyTotals[key] = 0;
                 });
         });
@@ -343,8 +343,8 @@ function fetchProductionData(staff, chartId, tableBodyId, countId, monthlyTableB
             dayWiseTotals, monthlyTotals, parseFloat(totalProductionCount.toFixed(1))
         );
     }, (error) => {
-        console.error(`Error fetching  data:`, error);
-        document.getElementById(countId).textContent = `Error loading  data`;
+        console.error(`Error fetching ${staff} data:`, error);
+        document.getElementById(countId).textContent = `Error loading ${staff} data`;
     });
 }
 
@@ -356,7 +356,7 @@ function updateProductionDisplay(staff, chartId, tableBodyId, countId, monthlyTa
                               dayWiseTotals, monthlyTotals, totalProductionCount) {
     // Update total count display
     document.getElementById(countId).innerHTML = 
-        `Total Production Count for : `;
+        `Total Production Count for ${staff}: ${totalProductionCount}`;
     
     // Update chart
     updateChart(chartId, dayWiseTotals, staff);
@@ -367,7 +367,7 @@ function updateProductionDisplay(staff, chartId, tableBodyId, countId, monthlyTa
     Object.entries(dayWiseTotals).forEach(([date, count]) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td></td>
+            <td>${date}</td>
             <td>${count.toFixed(1)}</td>
         `;
         dailyTableBody.appendChild(row);
@@ -379,7 +379,7 @@ function updateProductionDisplay(staff, chartId, tableBodyId, countId, monthlyTa
     Object.entries(monthlyTotals).forEach(([month, count]) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td></td>
+            <td>${month}</td>
             <td>${count.toFixed(1)}</td>
         `;
         monthlyTableBody.appendChild(row);
@@ -408,7 +408,7 @@ function updateChart(chartId, dayWiseTotals, staff) {
         data: {
             labels: labels, // All labels (for panning)
             datasets: [{
-                label: `Daily Production Count - `,
+                label: `Daily Production Count - ${staff}`,
                 data: sortedData, // All data (for panning)
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 borderColor: 'rgba(75, 192, 192, 1)',
@@ -479,7 +479,7 @@ function updateTable(tableBodyId, dayWiseTotals) {
 }
         window.prepareAndDownloadData = function(staffName, dayWiseTotals, monthlyTotals) {
             if (!dayWiseTotals || Object.keys(dayWiseTotals).length === 0) {
-                alert(`No data available for  to download.`);
+                alert(`No data available for ${staffName} to download.`);
                 return;
             }
 
@@ -497,10 +497,10 @@ function updateTable(tableBodyId, dayWiseTotals) {
             const worksheetDayWise = XLSX.utils.json_to_sheet(dayWiseData);
             const worksheetMonthly = XLSX.utils.json_to_sheet(monthlyData);
 
-            XLSX.utils.book_append_sheet(workbook, worksheetDayWise, ` Day Wise`);
-            XLSX.utils.book_append_sheet(workbook, worksheetMonthly, ` Monthly`);
+            XLSX.utils.book_append_sheet(workbook, worksheetDayWise, `${staffName} Day Wise`);
+            XLSX.utils.book_append_sheet(workbook, worksheetMonthly, `${staffName} Monthly`);
 
-            XLSX.writeFile(workbook, `_Production_Data.xlsx`);
+            XLSX.writeFile(workbook, `${staffName}_Production_Data.xlsx`);
         };
 
         document.addEventListener("DOMContentLoaded", () => {

@@ -603,7 +603,7 @@
                                         // Add to table
                                         const row = tableBody.insertRow();
                                         row.innerHTML = `
-                                            <td></td>
+                                            <td>${date}</td>
                                             <td>${category.replace(/([A-Z])/g, ' $1').trim()}</td>
                                             <td>${entry.duration.toFixed(1)}</td>
                                         `;
@@ -716,7 +716,7 @@ function updateOEE() {
     const periodDisplay = timePeriod === 'day' ? formatDate(startDate) :
                          `${formatDate(startDate)} to ${formatDate(endDate)}`;
     document.querySelectorAll('.metric-card div:last-child').forEach(el => {
-        el.textContent = `For `;
+        el.textContent = `For ${periodDisplay}`;
     });
     
     // Update target line in chart

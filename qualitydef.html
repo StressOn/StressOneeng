@@ -328,10 +328,10 @@ function fetchQualityDefects() {
                     const issueClass = issueType.toLowerCase().replace('_', '-');
                     
                     row.innerHTML = `
-                        <td></td>
-                        <td></td>
+                        <td>${dateString}</td>
+                        <td>${timeString}</td>
                         <td>${defect.staff || 'N/A'}</td>
-                        <td class="defect-type "></td>
+                        <td class="defect-type ${issueClass}">${issueType}</td>
                     `;
                     tableBody.appendChild(row);
                 }
