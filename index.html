@@ -103,9 +103,9 @@
 
     <script>
         // Predefined login credentials
-const defaultUsername = 'GH_USERNAME_PLACEHOLDER';  // No special characters
-const defaultPassword = 'GH_PASSWORD_PLACEHOLDER';
-        
+        const defaultUsername = 'sys';
+        const defaultPassword = '1234';
+
         // Check if user is already logged in
         if (localStorage.getItem("loggedIn") === "true") {
             window.location.href = 'main.html';  // Redirect to main page if already logged in
@@ -143,9 +143,35 @@ const defaultPassword = 'GH_PASSWORD_PLACEHOLDER';
             }
         });
 
+        // Security measures
+        document.addEventListener("contextmenu", function (e) {
+            e.preventDefault(); // Disable right-click menu
+        });
 
+        document.addEventListener("keydown", function (e) {
+            // Disable common shortcuts for copying and inspecting elements
+            if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+                e.preventDefault();
+            }
 
+            // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+            if (e.key === "F12" || 
+                (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+                e.preventDefault();
+            }
+        });
 
+        (function() {
+            function devToolsDetection() {
+                let start = performance.now();
+                debugger; // Triggers if DevTools is open
+                let end = performance.now();
+                if (end - start > 100) { // DevTools slows execution
+                    window.location.href = "about:blank"; // Redirect to a blank page
+                }
+            }
+            setInterval(devToolsDetection, 1000); // Run check every second
+        })();
     </script>
 </body>
 </html>
