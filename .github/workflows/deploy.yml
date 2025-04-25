@@ -7,28 +7,30 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install replace-in-file
-        run: npm install -g replace-in-file
-
-      - name: Inject credentials
+      - name: Replace placeholders
         run: |
-          replace-in-file 'PLACEHOLDER_USERNAME' '${{ secrets.DASHBOARD_USERNAME }}' index.html
-          replace-in-file 'PLACEHOLDER_PASSWORD' '${{ secrets.DASHBOARD_PASSWORD }}' index.html
-          replace-in-file 'FIREBASE_API_KEY_PLACEHOLDER' '${{ secrets.FIREBASE_API_KEY }}' *.html
-          replace-in-file 'FIREBASE_DATABASE_URL_PLACEHOLDER' '${{ secrets.FIREBASE_DATABASE_URL }}' *.html
+          # First install required tool
+          sudo apt-get install -y gettext
+          
+          # For login credentials
+          envsubst '${DASHBOARD_USERNAME}${DASHBOARD_PASSWORD}' < index.html > index.tmp
+          mv index.tmp index.html
+          
+          # For Firebase config (all HTML files)
+          for file in *.html; do
+            envsubst '${FIREBASE_API_KEY}${FIREBASE_DATABASE_URL}' < "$file" > "$file.tmp"
+            mv "$file.tmp" "$file"
+          done
+        env:
+          DASHBOARD_USERNAME: ${{ secrets.DASHBOARD_USERNAME }}
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
