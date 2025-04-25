@@ -14,12 +14,13 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Replace placeholders with secrets
-      - name: Inject credentials
-        run: |
-          sed -i "s/PLACEHOLDER_USERNAME/${{ secrets.DASHBOARD_USERNAME }}/g" index.html
-          sed -i "s/PLACEHOLDER_PASSWORD/${{ secrets.DASHBOARD_PASSWORD }}/g" index.html
-          sed -i "s/FIREBASE_API_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" *.html
-          sed -i "s/FIREBASE_DATABASE_URL_PLACEHOLDER/${{ secrets.FIREBASE_DATABASE_URL }}/g" *.html
+     - name: Inject credentials
+  run: |
+    # Escape special characters in replacements
+    sed -i "s|PLACEHOLDER_USERNAME|$(echo '${{ secrets.DASHBOARD_USERNAME }}' | sed 's/[\/&]/\\&/g')|g" index.html
+    sed -i "s|PLACEHOLDER_PASSWORD|$(echo '${{ secrets.DASHBOARD_PASSWORD }}' | sed 's/[\/&]/\\&/g')|g" index.html
+    sed -i "s|FIREBASE_API_KEY_PLACEHOLDER|$(echo '${{ secrets.FIREBASE_API_KEY }}' | sed 's/[\/&]/\\&/g')|g" *.html
+    sed -i "s|FIREBASE_DATABASE_URL_PLACEHOLDER|$(echo '${{ secrets.FIREBASE_DATABASE_URL }}' | sed 's/[\/&]/\\&/g')|g" *.html
 
       # Step 3: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
