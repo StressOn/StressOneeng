@@ -7,38 +7,28 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install envsubst
-        run: sudo apt-get install -y gettext
-
+      - uses: actions/checkout@v4
+      
       - name: Replace credentials
         run: |
+          # Replace login credentials
+          sed -i "s/GHDEPLOY_DASHBOARD_USERNAME/${{ secrets.DASHBOARD_USERNAME }}/g" index.html
+          sed -i "s/GHDEPLOY_DASHBOARD_PASSWORD/${{ secrets.DASHBOARD_PASSWORD }}/g" index.html
+          
+          # Replace Firebase config in all HTML files
           for file in *.html; do
-            echo "Processing $file..."
-            envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+            sed -i "s/FIREBASE_API_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" "$file"
+            sed -i "s/FIREBASE_DATABASE_URL_PLACEHOLDER/${{ secrets.FIREBASE_DATABASE_URL }}/g" "$file"
           done
-        env:
-          DASHBOARD_USERNAME: ${{ secrets.DASHBOARD_USERNAME }}
-          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          
+          # Verify changes
+          echo "=== Verification ==="
+          grep "defaultUsername" index.html
+          grep "defaultPassword" index.html
 
-      - name: Verify replacements
-        run: |
-          echo "=== Login Credentials Verification ==="
-          grep -A 2 "defaultUsername" index.html || echo "No login credentials found"
-          echo "=== Firebase Config Verification ==="
-          grep -A 3 "firebaseConfig" index.html || echo "No Firebase config found"
-          echo "=== Checking for unprocessed placeholders ==="
-          ! grep -r "\${DASHBOARD_USERNAME\|\${DASHBOARD_PASSWORD\|\${FIREBASE_API_KEY\|\${FIREBASE_DATABASE_URL}" *.html || exit 1
-          echo "Verification successful - no unprocessed placeholders found"
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
