@@ -11,22 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Replace credentials
+      - name: Replace credentials safely
         run: |
-          # Replace login credentials
-          sed -i "s/GHDEPLOY_DASHBOARD_USERNAME/${{ secrets.DASHBOARD_USERNAME }}/g" index.html
-          sed -i "s/GHDEPLOY_DASHBOARD_PASSWORD/${{ secrets.DASHBOARD_PASSWORD }}/g" index.html
+          # Escape special characters in secrets
+          ESCAPED_USERNAME=$(printf '%s\n' "${{ secrets.DASHBOARD_USERNAME }}" | sed -e 's/[\/&]/\\&/g')
+          ESCAPED_PASSWORD=$(printf '%s\n' "${{ secrets.DASHBOARD_PASSWORD }}" | sed -e 's/[\/&]/\\&/g')
           
-          # Replace Firebase config in all HTML files
-          for file in *.html; do
-            sed -i "s/FIREBASE_API_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" "$file"
-            sed -i "s/FIREBASE_DATABASE_URL_PLACEHOLDER/${{ secrets.FIREBASE_DATABASE_URL }}/g" "$file"
-          done
+          # Perform replacements
+          sed -i "s/GH_USERNAME_PLACEHOLDER/${ESCAPED_USERNAME}/g" index.html
+          sed -i "s/GH_PASSWORD_PLACEHOLDER/${ESCAPED_PASSWORD}/g" index.html
           
           # Verify changes
-          echo "=== Verification ==="
-          grep "defaultUsername" index.html
-          grep "defaultPassword" index.html
+          echo "=== Credential Verification ==="
+          grep -A 2 "defaultUsername" index.html || echo "No username found"
+          grep -A 2 "defaultPassword" index.html || echo "No password found"
 
       - uses: peaceiris/actions-gh-pages@v3
         with:
