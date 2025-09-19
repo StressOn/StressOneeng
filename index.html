@@ -3,175 +3,366 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Systematic Industries Ltd - IoT Dashboard Login</title>
+    <title>Systematic - Login</title>
     <style>
-        /* General reset */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-        }
-
-        /* Body styling */
-        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f3f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            color: #333;
         }
-
-        /* Container for the form */
+        
+        body {
+            background: linear-gradient(135deg, #f0f3f5 0%, #e0e7ec 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
         .login-container {
-            background-color: #ffffff;
+            background: white;
             padding: 40px;
-            max-width: 400px;
+            border-radius: 15px;
             width: 100%;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
-
-        /* Company branding */
-        .login-container h1 {
-            color: #007BFF;
-            font-size: 26px;
-            margin-bottom: 20px;
-        }
-
-        .login-container p {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        /* Input field styling */
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        /* Button styling */
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #007BFF;
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #1976d2;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            border: none;
-            border-radius: 5px;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        h2 {
+            color: #1976d2;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
             font-size: 16px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #444;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s;
         }
-
-        button:hover {
-            background-color: #0056b3;
+        
+        #loginBtn {
+            background: #1976d2;
+            color: white;
         }
-
-        /* Error message styling */
-        .error-message {
-            color: red;
+        
+        #loginBtn:hover {
+            background: #1565c0;
+            transform: translateY(-2px);
+        }
+        
+        #resetBtn {
+            background: #ff9800;
+            color: white;
+        }
+        
+        #resetBtn:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+        }
+        
+        #message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
             font-size: 14px;
-            margin-top: 10px;
-            display: none; /* Initially hidden */
+            display: none;
+        }
+        
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+            display: block !important;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+            display: block !important;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #bbdefb;
+            display: block !important;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #777;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .support {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        
+        @media (max-width: 500px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-
     <div class="login-container">
-        <h1>Welcome to Systematic Industries Ltd</h1>
-        <p>Log in to access the IoT Dashboard</p>
-
-        <!-- Input fields for username and password (empty by default) -->
-        <input type="text" id="usernameInput" placeholder="Username">
-        <input type="password" id="passwordInput" placeholder="Password">
+        <div class="logo">S</div>
+        <h2>IoT Dashboard Login</h2>
+        <p class="subtitle">Systematic Industries Ltd - Unit 6 ACS</p>
         
-        <button id="loginButton">Log In</button>
-
-        <!-- Error message -->
-        <div class="error-message" id="errorMessage">
-            Incorrect username or password. Please try again.
+        <div class="input-group">
+            <label for="email">Email Address</label>
+            <input id="email" type="email" placeholder="Enter your registered email" required />
+        </div>
+        
+        <div class="input-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Enter your password" required />
+        </div>
+        
+        <div class="button-group">
+            <button id="loginBtn">Sign in</button>
+            <button id="resetBtn">Reset Password</button>
+        </div>
+        
+        <div id="message"></div>
+        
+        <div class="footer">
+            <p><strong>Access restricted to pre-approved users only</strong></p>
+            <p>If you need access, please contact your system administrator</p>
         </div>
     </div>
 
-    <script>
-        // Predefined login credentials
-        const defaultUsername = 'sys';
-        const defaultPassword = '1234';
+    <!-- Firebase Authentication (modular v9 SDK) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
+            sendPasswordResetEmail
+        } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-        // Check if user is already logged in
-        if (localStorage.getItem("loggedIn") === "true") {
-            window.location.href = 'main.html';  // Redirect to main page if already logged in
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCIoNQqv5fh6wiKPEvHRMFfM1S8o0NAa34",
+            authDomain: "customer--2-login.firebaseapp.com",
+            projectId: "customer--2-login",
+            storageBucket: "customer--2-login.appspot.com",
+            messagingSenderId: "79046345504",
+            appId: "1:79046345504:web:66ad31364bf99160780d45",
+            measurementId: "G-MJ2KKW6FKC"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const emailEl = document.getElementById('email');
+        const pwdEl = document.getElementById('password');
+        const msgEl = document.getElementById('message');
+        const loginBtn = document.getElementById('loginBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Login function
+        loginBtn.addEventListener('click', async () => {
+            const email = emailEl.value;
+            const password = pwdEl.value;
+            
+            if (!validateInputs(email, password)) return;
+            
+            try {
+                loginBtn.textContent = 'Signing in...';
+                loginBtn.disabled = true;
+                
+                await signInWithEmailAndPassword(auth, email, password);
+                showMessage('Login successful! Redirecting...', 'success');
+                localStorage.setItem("loggedIn", "true");
+                
+                setTimeout(() => {
+                    window.location.href = "main.html";
+                }, 1000);
+            } catch (error) {
+                handleAuthError(error, 'login');
+                loginBtn.textContent = 'Sign in';
+                loginBtn.disabled = false;
+            }
+        });
+
+        // Password reset function
+        resetBtn.addEventListener('click', async () => {
+            const email = emailEl.value;
+            
+            if (!email) {
+                showMessage('Please enter your email address to reset password', 'error');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showMessage('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            try {
+                resetBtn.textContent = 'Sending...';
+                resetBtn.disabled = true;
+                
+                await sendPasswordResetEmail(auth, email);
+                showMessage('Password reset email sent! Check your inbox and spam folder.', 'success');
+                resetBtn.textContent = 'Reset Password';
+                resetBtn.disabled = false;
+            } catch (error) {
+                handleResetError(error);
+                resetBtn.textContent = 'Reset Password';
+                resetBtn.disabled = false;
+            }
+        });
+
+        // Input validation
+        function validateInputs(email, password) {
+            if (!email || !password) {
+                showMessage('Please fill in both email and password fields.', 'error');
+                return false;
+            }
+            
+            if (!isValidEmail(email)) {
+                showMessage('Please enter a valid email address.', 'error');
+                return false;
+            }
+            
+            return true;
         }
 
-        // Function to handle login
-        function handleLogin() {
-            const username = document.getElementById('usernameInput').value;
-            const password = document.getElementById('passwordInput').value;
+        // Email validation
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
 
-            // If credentials are correct
-            if (username === defaultUsername && password === defaultPassword) {
-                alert('Login successful!');
-                localStorage.setItem("loggedIn", "true"); // Set login flag
-                window.location.href = 'main.html';  // Redirect to main page
-            } else {
-                // Show the error message
-                document.getElementById('errorMessage').style.display = 'block';
+        // Show message
+        function showMessage(message, type) {
+            msgEl.textContent = message;
+            msgEl.className = type;
+        }
+
+        // Handle authentication errors
+        function handleAuthError(error, type) {
+            console.error(`${type} error:`, error);
+            
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    showMessage('No account found with this email. Access is restricted to pre-approved users.', 'error');
+                    break;
+                case 'auth/wrong-password':
+                    showMessage('Incorrect password. Use the "Reset Password" button if needed.', 'error');
+                    break;
+                case 'auth/invalid-email':
+                    showMessage('Invalid email address format.', 'error');
+                    break;
+                case 'auth/too-many-requests':
+                    showMessage('Too many failed attempts. Account temporarily disabled. Reset password or try again later.', 'error');
+                    break;
+                default:
+                    showMessage(`Login failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Handle password reset errors
+        function handleResetError(error) {
+            console.error('Password reset error:', error);
+            
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    showMessage('This email is not registered in our system', 'error');
+                    break;
+                case 'auth/invalid-email':
+                    showMessage('Invalid email address format.', 'error');
+                    break;
+                case 'auth/too-many-requests':
+                    showMessage('Too many attempts. Please try again later.', 'error');
+                    break;
+                default:
+                    showMessage(`Error sending reset email: ${error.message}`, 'error');
             }
         }
 
-        // Handle login button click
-        document.getElementById('loginButton').addEventListener('click', handleLogin);
-
-        // Handle Enter key press in input fields
-        document.getElementById('usernameInput').addEventListener('keydown', function(e) {
+        // Allow form submission with Enter key
+        document.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                handleLogin();
+                loginBtn.click();
             }
         });
-
-        document.getElementById('passwordInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                handleLogin();
-            }
-        });
-
-        // Security measures
-        document.addEventListener("contextmenu", function (e) {
-            e.preventDefault(); // Disable right-click menu
-        });
-
-        document.addEventListener("keydown", function (e) {
-            // Disable common shortcuts for copying and inspecting elements
-            if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
-                e.preventDefault();
-            }
-
-            // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
-            if (e.key === "F12" || 
-                (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
-                e.preventDefault();
-            }
-        });
-
-        (function() {
-            function devToolsDetection() {
-                let start = performance.now();
-                debugger; // Triggers if DevTools is open
-                let end = performance.now();
-                if (end - start > 100) { // DevTools slows execution
-                    window.location.href = "about:blank"; // Redirect to a blank page
-                }
-            }
-            setInterval(devToolsDetection, 1000); // Run check every second
-        })();
     </script>
 </body>
 </html>
