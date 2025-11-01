@@ -222,7 +222,9 @@
             apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
             databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
         };
-
+firebase.auth().signInAnonymously().catch(function(error) {
+  console.log("Auto-signin completed");
+});
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
@@ -527,3 +529,4 @@ resetTimer();
     </script>
 </body>
 </html>
+
