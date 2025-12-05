@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quality Defect Tracking | Systematic Industries</title>
+	<!-- Add this with your other script imports -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -164,6 +166,31 @@
                 flex-direction: column;
             }
         }
+/* Excel Export Button */
+.excel-button {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background-color: #1d6f42;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    border: none;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.excel-button:hover {
+    background-color: #165a36;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
     </style>
 </head>
 <body>
@@ -220,14 +247,20 @@
     </div>
 
     <a href="main.html" class="back-button">Back to Dashboard</a>
+	<!-- Add this near your back button -->
+<button id="exportExcel" class="excel-button">
+    <i class="fas fa-file-excel"></i> Export Excel
+</button>
     
     <footer>
         <p>&copy; 2025 Systematic Industries Ltd. All rights reserved.</p>
     </footer>
 
     <!-- Firebase and Chart.js -->
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
@@ -363,17 +396,25 @@ function fetchQualityDefects() {
     });
 }
         // Initialize or update the chart
-        function updateChart() {
-            const ctx = document.getElementById('defectiveChart').getContext('2d');
-            
-            if (defectiveChart) {
-                defectiveChart.data.labels = defectData.dates;
-                defectiveChart.data.datasets[0].data = defectData.issue1Counts;
-                defectiveChart.data.datasets[1].data = defectData.issue2Counts;
-                defectiveChart.data.datasets[2].data = defectData.issue3Counts;
-                defectiveChart.update();
-            } else {
-                defectiveChart = new Chart(ctx, {
+function updateChart() {
+    const ctx = document.getElementById('defectiveChart').getContext('2d');
+    
+    // Sort dates and get last 10
+    const sortedDates = [...defectData.dates].sort((a, b) => new Date(a) - new Date(b));
+    const last10Dates = sortedDates.slice(-10);
+    const last10Issue1 = last10Dates.map(date => defectData.issue1Counts[defectData.dates.indexOf(date)]);
+    const last10Issue2 = last10Dates.map(date => defectData.issue2Counts[defectData.dates.indexOf(date)]);
+    const last10Issue3 = last10Dates.map(date => defectData.issue3Counts[defectData.dates.indexOf(date)]);
+
+    // Safely destroy previous chart
+    if (window.defectiveChart && typeof window.defectiveChart.destroy === 'function') {
+        try {
+            window.defectiveChart.destroy();
+        } catch (e) {
+            console.warn("Failed to destroy previous chart:", e);
+        }
+    }
+                window.defectiveChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: defectData.dates,
@@ -441,8 +482,73 @@ function fetchQualityDefects() {
                     }
                 });
             }
-        }
+        
+// Add this function to your script
+function exportToExcel() {
+    // Prepare data for export
+    const exportData = [];
+    
+    // Get all table rows
+    const rows = document.querySelectorAll('#defectiveTableBody tr');
+    
+    // Add headers
+    exportData.push(['Date', 'Time', 'Staff', 'Issue Type']);
+    
+    // Add each row's data
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        exportData.push([
+            cells[0].textContent,
+            cells[1].textContent,
+            cells[2].textContent,
+            cells[3].textContent
+        ]);
+    });
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Defect Records');
+    
+    // Export the workbook
+    XLSX.writeFile(wb, `Quality_Defects_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
 
+// --- Secure Anonymous Authentication ---
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        console.log("Signed in anonymously as:", user.uid);
+        initializeQualityDefects(); // start only after auth
+    } else {
+        firebase.auth().signInAnonymously().catch((error) => {
+            console.error("Anonymous Sign-in Error:", error);
+        });
+    }
+});
+
+// Wrap your existing logic in a function
+function initializeQualityDefects() {
+    fetchQualityDefects();
+    setInterval(fetchQualityDefects, 300000); // refresh every 5 minutes
+    document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+}
+
+
+
+
+// Add event listener for the export button
+document.addEventListener('DOMContentLoaded', () => {
+    fetchQualityDefects();
+    setInterval(fetchQualityDefects, 300000);
+  
+
+
+  
+    // Add this line to initialize the export button
+    document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+});
         // Initialize the page
         document.addEventListener('DOMContentLoaded', () => {
             fetchQualityDefects();
@@ -450,6 +556,63 @@ function fetchQualityDefects() {
             // Auto-refresh every 5 minutes
             setInterval(fetchQualityDefects, 300000);
         });
+
+
+
+document.addEventListener("contextmenu", function (e) {
+    e.preventDefault(); // Disable right-click menu
+});
+
+document.addEventListener("keydown", function (e) {
+    // Disable common shortcuts for copying and inspecting elements
+    if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
+        e.preventDefault();
+    }
+
+    // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+    if (e.key === "F12" || 
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+        e.preventDefault();
+    }
+});
+
+
+document.addEventListener("selectstart", function (e) {
+    e.preventDefault(); // Disable text selection
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) {
+        e.preventDefault();
+    }
+    if (e.ctrlKey && e.key === "P") {
+        e.preventDefault();
+    }
+});
+let logoutTimer;
+
+// Function to reset the logout timer
+function resetTimer() {
+    clearTimeout(logoutTimer); // Clear any existing timer
+    logoutTimer = setTimeout(logoutUser, 120000); // Set new timer for 1 min (60000 ms)
+}
+
+// Function to log out the user
+function logoutUser() {
+    localStorage.setItem("loggedIn", "false"); // Reset login flag
+    window.location.href = "index.html"; // Redirect to login page
+}
+
+// Event listeners for user activity
+document.addEventListener("mousemove", resetTimer);
+document.addEventListener("keypress", resetTimer);
+document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
+document.addEventListener("click", resetTimer);
+
+// Start the timer when the page loads
+resetTimer();
+
+
     </script>
 </body>
 </html>
