@@ -214,11 +214,35 @@
             databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
         };
 
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js';
-        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js';
+
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+
+// --- Secure Anonymous Authentication ---
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        console.log("Signed in anonymously as:", user.uid);
+        initializeStaffDashboard(); // call your data-loading logic
+    } else {
+        signInAnonymously(auth).catch((error) => {
+            console.error("Anonymous Sign-in Error:", error);
+        });
+    }
+});
+
+// Wrap your data logic in a function to run only after login
+function initializeStaffDashboard() {
+    fetchProductionData('StaffA', 'productionChartA', 'productionTableBodyA', 'countA');
+    fetchProductionData('StaffB', 'productionChartB', 'productionTableBodyB', 'countB');
+    fetchProductionData('StaffC', 'productionChartC', 'productionTableBodyC', 'countC');
+}
+
 
         // References to Staff data in Firebase
         const staffRefs = {
@@ -503,11 +527,7 @@ function updateTable(tableBodyId, dayWiseTotals) {
             XLSX.writeFile(workbook, `${staffName}_Production_Data.xlsx`);
         };
 
-        document.addEventListener("DOMContentLoaded", () => {
-            fetchProductionData('StaffA', 'productionChartA', 'productionTableBodyA', 'countA');
-            fetchProductionData('StaffB', 'productionChartB', 'productionTableBodyB', 'countB');
-            fetchProductionData('StaffC', 'productionChartC', 'productionTableBodyC', 'countC');
-        });
+
 
 
 
@@ -524,7 +544,7 @@ document.addEventListener("keydown", function (e) {
     }
 
     // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
-    if (e.key === "F12" || 
+    if (e.key === "F11" || 
         (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
         e.preventDefault();
     }
