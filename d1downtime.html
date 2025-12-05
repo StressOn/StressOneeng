@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StressON Engineering - Device Downtime</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
@@ -452,6 +453,31 @@
             XLSX.utils.book_append_sheet(workbook, worksheet, "Downtime Report");
             XLSX.writeFile(workbook, `Downtime_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
+	
+// --- Secure Anonymous Authentication ---
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        console.log("Signed in anonymously as:", user.uid);
+        initializeDowntime(); // Call function to start after login
+    } else {
+        firebase.auth().signInAnonymously().catch((error) => {
+            console.error("Anonymous Sign-in Error:", error);
+        });
+    }
+});
+
+// Wrap your main initialization inside a function
+async function initializeDowntime() {
+    const data = await fetchDowntimeData();
+    initializeUI(data);
+
+    // Set up auto-refresh every 5 minutes
+    setInterval(async () => {
+        const newData = await fetchDowntimeData();
+        initializeUI(newData);
+    }, 300000); // 5 minutes
+}
+
 
         // Main initialization
         document.addEventListener('DOMContentLoaded', async () => {
@@ -527,5 +553,3 @@ resetTimer();
     </script>
 </body>
 </html>
-
-
