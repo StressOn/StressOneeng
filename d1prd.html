@@ -4,254 +4,188 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Production Monitoring Dashboard</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Firebase & Chart.js -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.0.0"></script>
 
-
-
-
-<style>
-    /* Universal Reset */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    /* Body Styling */
-    body {
-        font-family: 'Arial', sans-serif;
-        background-color: #f5f5f5;
-        color: #333;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh; /* Ensures footer stays at the bottom */
-    }
-
-    /* Desktop Container Styling */
-    .container {
-        max-width: 1400px; /* Increased max width for larger desktop view */
-        margin: 80px auto 60px auto; /* Space for header/footer */
-        padding: 30px; /* More padding for spacious layout */
-        flex-grow: 1; /* Makes container take up remaining space */
-    }
-
-    /* Header Styling */
-    .header {
-        position: fixed; /* Sticks header to the top */
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: #007BFF;
-        color: white;
-        font-size: 2.2rem; /* Larger font for desktop */
-        text-align: center;
-        padding: 25px 0;
-        z-index: 1000; /* Ensures it stays above other elements */
-    }
-
-    /* Section Styling */
-    .section {
-        background-color: white;
-        padding: 30px; /* More padding for a spacious feel */
-        margin-bottom: 30px;
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-        border-radius: 10px;
-    }
-
-    .section h2 {
-        font-size: 2rem; /* Larger font for headings */
-        color: #007BFF;
-        margin-bottom: 15px;
-    }
-
-    /* Grid Layout for Desktop */
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr); /* Increased columns to 4 */
-        gap: 30px; /* Larger gap for spacious layout */
-    }
-/* Colorful Info Box Styling */
-.info-box {
-    padding: 30px;
-    border-radius: 10px;
-    text-align: center;
-    transition: transform 0.2s;
-    color: white; /* White text for better contrast */
-    font-weight: bold;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.info-box:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-
-/* Individual Box Colors */
-.info-box:nth-child(1) {  /* Finished Length */
-    background: linear-gradient(135deg, #4e54c8, #8f94fb); /* Purple */
-    border-left: 5px solid #3a3f9e;
-}
-
-.info-box:nth-child(2) {  /* Last Update */
-    background: linear-gradient(135deg, #11998e, #38ef7d); /* Teal */
-    border-left: 5px solid #0a6e5d;
-}
-
-.info-box:nth-child(3) {  /* Reset Production */
-    background: linear-gradient(135deg, #f46b45, #eea849); /* Orange */
-    border-left: 5px solid #d35400;
-}
-
-.info-box:nth-child(4) {  /* Yesterday Production */
-    background: linear-gradient(135deg, #00c6ff, #0072ff); /* Bright Blue */
-    border-left: 5px solid #0062cc;
-}
-
-.info-box:nth-child(5) {  /* Month Production */
-    background: linear-gradient(135deg, #ff416c, #ff4b2b); /* Pink/Red */
-    border-left: 5px solid #c0392b;
-}
-
-.info-box:nth-child(6) {  /* Machine Status */
-    background: linear-gradient(135deg, #556270, #4ecdc4); /* Gray/Teal */
-    border-left: 5px solid #2c3e50;
-}
-
-.info-box:nth-child(7) {  /* Machine Speed */
-    background: linear-gradient(135deg, #8e2de2, #4a00e0); /* Deep Purple */
-    border-left: 5px solid #6a1b9a;
-}
-
-/* Status-Specific Colors (for Machine Status) */
-.Running { color: #2ecc71; }  /* Green */
-.Stopped { color: #e74c3c; }  /* Red */
-.Offline { color: #f39c12; }  /* Yellow */
-
-    /* Chart Container Styling */
-    .chart-container {
-        width: 100%;
-        height: 500px; /* Increased height for better visibility */
-        position: relative;
-        background-color: white;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
-        margin-top: 30px;
-        border: 2px solid #007BFF;
-    }
-
-    /* Export Button Styling */
-    .export-button {
-        background-color: #007BFF;
-        color: white;
-        padding: 15px 30px; /* Bigger button for desktop */
-        border: none;
-        cursor: pointer;
-        border-radius: 5px;
-        font-size: 1.2rem; /* Larger font size */
-    }
-
-    .export-button:hover {
-        background-color: #0056b3;
-    }
-
-    /* Footer Styling */
-    footer {
-        position: fixed; /* Fixes footer to the bottom */
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 20px 0;
-        text-align: center;
-        background-color: #333;
-        color: white;
-        z-index: 1000;
-    }
-
-    /* Media Query for Mobile Devices (max-width: 768px) */
-    @media only screen and (max-width: 768px) {
-        /* Header Adjustments */
-        .header {
-            font-size: 1.5rem;
-            padding: 10px 0;
+    <style>
+        /* [Keep ALL your existing CSS styles exactly as they are] */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-
-        /* Adjust container for mobile */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
         .container {
-            width: 95%; /* Full width for smaller screens */
-            margin-top: 60px; /* Adjust spacing for smaller header */
-            margin-bottom: 50px;
-            padding: 10px; /* Less padding */
+            max-width: 1400px;
+            margin: 80px auto 60px auto;
+            padding: 30px;
+            flex-grow: 1;
         }
-
-        /* Section adjustments */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #007BFF;
+            color: white;
+            font-size: 2.2rem;
+            text-align: center;
+            padding: 25px 0;
+            z-index: 1000;
+        }
+        .section {
+            background-color: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
         .section h2 {
-            font-size: 1.2rem; /* Smaller heading */
+            font-size: 2rem;
+            color: #007BFF;
+            margin-bottom: 15px;
         }
-
-        /* Single-column grid */
         .grid {
-            grid-template-columns: 1fr; /* Single-column layout */
-            gap: 10px; /* Reduced gap */
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
         }
-
-        /* Chart adjustments */
-        .chart-container {
-            height: 300px; /* Reduce height */
-        }
-
-        /* Info box adjustments */
         .info-box {
-            font-size: 0.9rem; /* Smaller font */
-            padding: 10px; /* Less padding */
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.2s;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        /* Full-width button for mobile */
-        .export-button {
+        .info-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        .info-box:nth-child(1) {
+            background: linear-gradient(135deg, #4e54c8, #8f94fb);
+            border-left: 5px solid #3a3f9e;
+        }
+        .info-box:nth-child(2) {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            border-left: 5px solid #0a6e5d;
+        }
+        .info-box:nth-child(3) {
+            background: linear-gradient(135deg, #f46b45, #eea849);
+            border-left: 5px solid #d35400;
+        }
+        .info-box:nth-child(4) {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border-left: 5px solid #0062cc;
+        }
+        .info-box:nth-child(5) {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            border-left: 5px solid #c0392b;
+        }
+        .info-box:nth-child(6) {
+            background: linear-gradient(135deg, #556270, #4ecdc4);
+            border-left: 5px solid #2c3e50;
+        }
+        .info-box:nth-child(7) {
+            background: linear-gradient(135deg, #8e2de2, #4a00e0);
+            border-left: 5px solid #6a1b9a;
+        }
+        .Running { color: #2ecc71; }
+        .Stopped { color: #e74c3c; }
+        .Offline { color: #f39c12; }
+        .chart-container {
             width: 100%;
-            font-size: 0.9rem; /* Smaller font size */
+            height: 500px;
+            position: relative;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+            border: 2px solid #007BFF;
         }
-
-        /* Footer adjustments */
+        .export-button {
+            background-color: #007BFF;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1.2rem;
+        }
+        .export-button:hover {
+            background-color: #0056b3;
+        }
         footer {
-            font-size: 0.8rem; /* Smaller footer text */
-            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 0;
+            text-align: center;
+            background-color: #333;
+            color: white;
+            z-index: 1000;
         }
-    }
-
-#machineStatus {
-    font-weight: bold;
-}
-.Running {
-    color: #28a745; /* Green */
-}
-.Stopped {
-    color: #dc3545; /* Red */
-}
-[data-status="inactive"] {
-    color: #ffc107; /* Yellow */
-    font-style: italic;
-}
-
-</style>
-
-
-
-
-
-
-
+        @media only screen and (max-width: 768px) {
+            .header {
+                font-size: 1.5rem;
+                padding: 10px 0;
+            }
+            .container {
+                width: 95%;
+                margin-top: 60px;
+                margin-bottom: 50px;
+                padding: 10px;
+            }
+            .section h2 {
+                font-size: 1.2rem;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .chart-container {
+                height: 300px;
+            }
+            .info-box {
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+            .export-button {
+                width: 100%;
+                font-size: 0.9rem;
+            }
+            footer {
+                font-size: 0.8rem;
+                padding: 10px 0;
+            }
+        }
+        #machineStatus {
+            font-weight: bold;
+        }
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <div class="header">
@@ -259,38 +193,38 @@
     </div>
 
     <div class="container">
-	 <button class="export-button" onclick="goBack()">Back to Page</button>
+        <button class="export-button" onclick="goBack()">Back to Page</button>
         <div class="section">
             <h2>Production Summary</h2>
             <div class="grid">
                 <div class="info-box">
                     <strong>Finished Length</strong>
-                    <div id="lastValueDisplay">N/A</div>
+                    <div id="lastValueDisplay">Loading...</div>
                 </div>
                 <div class="info-box">
                     <strong>Last Update</strong>
-                    <div id="lastUpdateDisplay">N/A</div>
+                    <div id="lastUpdateDisplay">Loading...</div>
                 </div>
                 <div class="info-box">
                     <strong>Reset Production</strong>
-                    <div id="last24HourProduction">N/A</div>
+                    <div id="last24HourProduction">Loading...</div>
                 </div>
                 <div class="info-box">
                     <strong>Yesterday Production</strong>
-                    <div id="perDayProduction">N/A</div>
+                    <div id="perDayProduction">Loading...</div>
                 </div>
                 <div class="info-box">
                     <strong>Month Production</strong>
-                    <div id="perMonthProduction">N/A</div>
+                    <div id="perMonthProduction">Loading...</div>
                 </div>
                 <div class="info-box">
                     <strong>Machine Status</strong>
-                    <div id="machineStatus">N/A</div>
+                    <div id="machineStatus">Loading...</div>
                 </div>
-		<div class="info-box">
-   		 <strong>Machine Speed</strong>
-   		 <div id="machineSpeed">N/A</div>
-		</div>
+                <div class="info-box">
+                    <strong>Machine Speed</strong>
+                    <div id="machineSpeed">Loading...</div>
+                </div>
             </div>
         </div>
 
@@ -311,530 +245,528 @@
     </footer>
 
     <script>
-        // Firebase configuration
+        // Performance Optimizations
+        const OPTIMIZATION_CONFIG = {
+            CHART_DATA_POINTS: 100, // Limit chart points for better performance
+            FIREBASE_LIMIT: 500, // Limit initial Firebase data load
+            UPDATE_INTERVAL: 5000, // Update interval in ms
+            CACHE_DURATION: 30000 // Cache duration for calculations
+        };
+
+        // Initialize Firebase with optimized settings
         var firebaseConfig = {
-             apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
-     
-            databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/",
-          
+            apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
+            databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
         };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        var dailyProductionData = [];
-        var monthlyProductionData = [];
+        // Global variables with initial values
+        let chartDataCache = {
+            labels: [],
+            values: [],
+            lastUpdated: 0
+        };
 
+        let calculationsCache = {
+            daily: null,
+            monthly: null,
+            timestamp: 0
+        };
 
-
-
-
-
-
-// Initialize chart
-var ctx = document.getElementById('productionChart').getContext('2d');
-var productionChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [], // Populate with your data labels
-        datasets: [{
-            label: 'Production Over Time',
-            data: [], // Populate with your data points
-            borderColor: 'rgba(75, 192, 192, 1)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            fill: true,
-            tension: 0.4,
-            pointHoverRadius: 8
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            zoom: {
-                pan: {
-                    enabled: true,
-                    mode: 'xy', // Allow panning on both x and y axes
-                    speed: 8,  // Speed of panning
-                    threshold: 10 // Minimum movement before panning kicks in
-                },
-                zoom: {
-                    wheel: {
-                        enabled: true, // Enable zooming with the mouse wheel
-                        speed: 0.08    // Adjust zoom speed
-                    },
-                    pinch: {
-                        enabled: true  // Enable pinch-to-zoom for touch devices
-                    },
-                    drag: {
-                        enabled: false  // Disable drag-to-zoom for now
-                    },
-                    mode: 'x' // Zoom only on the x-axis
-                }
-            }
-        },
-        scales: {
-            x: {
-                display: true,
-                title: {
-                    display: true,
-                    text: 'Date',
-                    color: '#333',
-                    font: {
-                        size: 14,
-                        weight: 'bold'
-                    }
-                }
+        // Optimized Chart Initialization
+        var ctx = document.getElementById('productionChart').getContext('2d');
+        var productionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Production Over Time',
+                    data: [],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointHoverRadius: 8
+                }]
             },
-            y: {
-                display: true,
-                title: {
-                    display: true,
-                    text: 'Production Count',
-                    color: '#333',
-                    font: {
-                        size: 14,
-                        weight: 'bold'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 500 // Faster animations
+                },
+                plugins: {
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'xy',
+                            speed: 8,
+                            threshold: 10
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                                speed: 0.08
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            drag: {
+                                enabled: false
+                            },
+                            mode: 'x'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Date',
+                            color: '#333',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Production Count',
+                            color: '#333',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        }
                     }
                 }
             }
+        });
+
+        // Function to load initial data efficiently
+        async function loadInitialData() {
+            try {
+                // Load limited recent data first (for fast display)
+                const recentData = await loadRecentData();
+                
+                // Update UI immediately with recent data
+                updateUIWithRecentData(recentData);
+                
+                // Load historical data in background
+                setTimeout(loadHistoricalData, 1000);
+                
+                // Start real-time updates
+                startRealTimeUpdates();
+                
+            } catch (error) {
+                console.error("Error loading initial data:", error);
+                showErrorMessage("Failed to load data. Please refresh.");
+            }
         }
-    }
-});
 
+        // Load only recent data for fast display
+        async function loadRecentData() {
+            const snapshot = await database.ref('Sensor/readings')
+                .orderByKey()
+                .limitToLast(OPTIMIZATION_CONFIG.FIREBASE_LIMIT)
+                .once('value');
+            
+            return snapshot.val() || {};
+        }
 
+        // Load historical data in background
+        async function loadHistoricalData() {
+            const sensorRef = database.ref('Sensor/readings');
+            const snapshot = await sensorRef.once('value');
+            const data = snapshot.val();
+            
+            if (data) {
+                processAndCacheHistoricalData(data);
+                updateChartWithCachedData();
+                calculateAndCacheProductionValues();
+            }
+        }
 
-
-
-
-
-
-
-var yesterdayProduction = 0;
-var monthProduction = 0;
-var previousDayProduction = null; // To track the last day's production
-var lastKnownLength = null; // To track the last known length
-
-
-
-
-
-
-        // Function to monitor Firebase data and update the chart
-        function monitorData() {
-            var sensorRef = database.ref('Sensor/readings');
-            sensorRef.on('value', function(snapshot) {
-                var timeLabels = [];
-                var productionValues = [];
-                var latestValue = null;
-                var latestTimestamp = null;
-
-                snapshot.forEach(function(childSnapshot) {
-                    var data = childSnapshot.val();
-                    var timestamp = data.timestamp;  // Firebase timestamp in seconds
-                    var length = data.length;
-
-                    // Convert timestamp to milliseconds and format as date
-                    var timestampInMillis = timestamp * 1000;
-		   var dateObj = new Date(timestampInMillis);
-                    var formattedDate = new Date(timestampInMillis).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',  // Abbreviated month (e.g., "Sep")
-                        day: '2-digit'   // Two-digit day
+        // Process and cache historical data efficiently
+        function processAndCacheHistoricalData(data) {
+            const timeLabels = [];
+            const productionValues = [];
+            const dataPoints = [];
+            
+            // Convert object to array and sort by timestamp
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                if (item && item.timestamp && item.length !== undefined) {
+                    dataPoints.push({
+                        timestamp: item.timestamp * 1000,
+                        length: parseFloat(item.length)
                     });
-
-                    // Push formatted date to chart labels and production values to chart data
-                    timeLabels.push(formattedDate);
-                    productionValues.push(length);
-
-                    // Update the last known value and timestamp
-                    latestValue = length;
-                    latestTimestamp = timestampInMillis;
-                });
-
-                // Update the chart with the new data
-                productionChart.data.labels = timeLabels;
-                productionChart.data.datasets[0].data = productionValues;
-                productionChart.update();
-
-
-		 // Calculate yesterday's production from chart
-        calculateYesterdayProductionFromChart();
-
-        // Calculate monthly production from chart
-        calculateMonthlyProductionFromChart();
-
-
-
-
-function calculateMonthlyProductionFromChart() {
-    const chartData = productionChart.data.datasets[0].data;  
-    const timeLabels = productionChart.data.labels;  
-
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    let firstValue = null;
-    let lastValue = null;
-
-    for (let i = 0; i < timeLabels.length; i++) {
-        const date = new Date(timeLabels[i]);
-        const month = date.getMonth();
-        const year = date.getFullYear();
-
-        if (month === currentMonth && year === currentYear) {
-            if (firstValue === null) {
-                firstValue = chartData[i];
+                }
+            });
+            
+            // Sort by timestamp
+            dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+            
+            // Sample data if there are too many points
+            const samplingRate = Math.max(1, Math.floor(dataPoints.length / OPTIMIZATION_CONFIG.CHART_DATA_POINTS));
+            
+            for (let i = 0; i < dataPoints.length; i += samplingRate) {
+                const point = dataPoints[i];
+                const date = new Date(point.timestamp);
+                
+                // Format date efficiently
+                const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                
+                timeLabels.push(formattedDate);
+                productionValues.push(point.length);
             }
-            lastValue = chartData[i];
+            
+            // Cache the processed data
+            chartDataCache = {
+                labels: timeLabels,
+                values: productionValues,
+                lastUpdated: Date.now()
+            };
         }
-    }
 
-    const monthProduction = firstValue !== null && lastValue !== null 
-        ? (lastValue - firstValue).toFixed(2) 
-        : "N/A";
-
-    document.getElementById("perMonthProduction").innerText = monthProduction;
-}
-
-function calculateYesterdayProductionFromChart() {
-    const chartData = productionChart.data.datasets[0].data;  
-    const timeLabels = productionChart.data.labels;  
-
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-
-    let yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0)).getTime();
-    let yesterdayEnd = new Date(yesterday.setHours(23, 59, 59, 999)).getTime();
-
-    let firstValue = null;
-    let lastValue = null;
-
-    for (let i = 0; i < timeLabels.length; i++) {
-        const timestamp = new Date(timeLabels[i]).getTime();
-
-        if (timestamp >= yesterdayStart && timestamp <= yesterdayEnd) {
-            if (firstValue === null) {
-                firstValue = chartData[i];
+        // Update chart with cached data
+        function updateChartWithCachedData() {
+            if (chartDataCache.labels.length > 0) {
+                productionChart.data.labels = chartDataCache.labels;
+                productionChart.data.datasets[0].data = chartDataCache.values;
+                productionChart.update('none'); // 'none' prevents animation for faster update
             }
-            lastValue = chartData[i];
         }
-    }
 
-    const productionYesterday = firstValue !== null && lastValue !== null 
-        ? (lastValue - firstValue).toFixed(2) 
-        : "0.00";
-
-    document.getElementById("perDayProduction").innerText = productionYesterday;
-}
-
-
-
-
-function calculateMonthlyProductionFromChart() {
-    const chartData = productionChart.data.datasets[0].data;  // Get the production data from the chart
-    const timeLabels = productionChart.data.labels;  // Get the corresponding timestamps
-
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    let firstValue = null;
-    let lastValue = null;
-
-    for (let i = 0; i < timeLabels.length; i++) {
-        const date = new Date(timeLabels[i]);
-        const month = date.getMonth();
-        const year = date.getFullYear();
-
-        if (month === currentMonth && year === currentYear) {
-            if (firstValue === null) {
-                firstValue = chartData[i];
-            }
-            lastValue = chartData[i];
-        }
-    }
-
-    const monthProduction = firstValue !== null && lastValue !== null 
-        ? (lastValue - firstValue).toFixed(2) 
-        : "N/A";
-
-    document.getElementById("perMonthProduction").innerText = monthProduction;
-}
-
-
-
-
-
-
-
-
-
-// Initialize variables
-let lastKnownLength = localStorage.getItem('lastKnownLength') || null;
-let lastKnownTimestamp = localStorage.getItem('lastKnownTimestamp') || null;
-let lastSpeedUpdateTime = null;
-
-// Listen for Firebase updates
-var sensorRef = database.ref('Sensor/readings');
-sensorRef.limitToLast(1).on('child_added', function(snapshot) {
-    var data = snapshot.val();
-    var latestValue = parseFloat(data.length).toFixed(2);
-    var latestTimestamp = data.timestamp * 1000;
-    
-    // Update display values
-    document.getElementById("lastValueDisplay").innerText = latestValue;
-    var minutesAgo = Math.floor((Date.now() - latestTimestamp) / (1000 * 60));
-    document.getElementById("lastUpdateDisplay").innerText = minutesAgo + " minutes ago";
-
-    // Calculate speed if we have previous data
-    if (lastKnownLength !== null && lastKnownTimestamp !== null) {
-        const lengthDifference = latestValue - lastKnownLength;
-        const timeDifference = (latestTimestamp - lastKnownTimestamp) / 1000;
-        
-        if (timeDifference > 0 && timeDifference < 300) {
-            const speed = (lengthDifference / timeDifference) * 60;
-            document.getElementById("machineSpeed").innerText = speed.toFixed(2) + " M/min";
-            lastSpeedUpdateTime = Date.now();
-        }
-    }
-    
-    if (lastSpeedUpdateTime && (Date.now() - lastSpeedUpdateTime) > 300000) {
-        document.getElementById("machineSpeed").innerText = "N/A";
-    }
-
-    // Determine machine status
-    var minutesSinceUpdate = (Date.now() - latestTimestamp) / (1000 * 60);
-    var newStatus;
-    if (minutesSinceUpdate > 5) {
-        newStatus = "Offline";
-    } 
-    else if (lastKnownLength !== null && parseFloat(lastKnownLength).toFixed(2) !== latestValue) {
-        newStatus = "Running";
-    } 
-    else {
-        newStatus = "Stopped";
-    }
-    
-    // Update UI and storage
-    document.getElementById("machineStatus").innerText = newStatus;
-    localStorage.setItem('lastKnownLength', latestValue);
-    localStorage.setItem('lastKnownTimestamp', latestTimestamp);
-    
-    // Update for next check
-    lastKnownLength = latestValue;
-    lastKnownTimestamp = latestTimestamp;
-});
-
+        // Start real-time updates for latest data
+        function startRealTimeUpdates() {
+            // Listen only for new data (not all historical)
+            var latestDataRef = database.ref('Sensor/readings')
+                .orderByKey()
+                .limitToLast(1);
+            
+            latestDataRef.on('child_added', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    updateRealTimeDisplay(data);
+                    updateChartWithLatestPoint(data);
+                }
             });
 
-
-
-
-
-           var perDayRef = database.ref('Sensor/perday');
-perDayRef.on('value', function(snapshot) {
-    const data = snapshot.val(); // Get the snapshot value
-    let count;
-
-    // Check if the snapshot has valid data and if count exists
-    if (data && data.count !== undefined) {
-        count = parseFloat(data.count).toFixed(1);
-    } else {
-        count = "N/A"; // Otherwise, set it to "N/A"
-    }
-
-    // Display the count or "N/A" accordingly
-    document.getElementById("last24HourProduction").innerText = count;
-
-    // Push the actual count to the array; use 0 for actual zero count
-    dailyProductionData.push(count === "N/A" ? 0 : count);
-});
-
-
-
-
+            // Update daily production counter
+            database.ref('Sensor/perday').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.count !== undefined) {
+                    const count = parseFloat(data.count).toFixed(1);
+                    document.getElementById("last24HourProduction").innerText = count;
+                }
+            });
         }
 
-        monitorData();
-
-
-// --- Secure Anonymous Authentication ---
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        console.log("Signed in anonymously as:", user.uid);
-        monitorData(); // Start after login
-    } else {
-        firebase.auth().signInAnonymously().catch((error) => {
-            console.error("Anonymous Sign-in Error:", error);
-        });
-    }
-});
-
-
-
-
-
-
-// Function to export daily and monthly production to Excel
-function exportToExcel() {
-    var wb = XLSX.utils.book_new(); // Create a new workbook
-
-
-
-
-
-
-// ============= Sheet 1: Daily Production (Current Month) =============
-// Initialize the array for the daily production sheet with headers
-var dailySheetData = [["Date", "Daily Production"]]; // Headers for daily production sheet
-var currentMonth = new Date().getMonth(); // Get the current month (0 = January, 9 = October)
-var dailyProductionData = productionChart.data.datasets[0].data; // Get cumulative data from the chart
-var daysInCurrentMonth = new Date(new Date().getFullYear(), currentMonth + 1, 0).getDate(); // Get number of days in current month
-
-// Create an object to store the first and last production value of each day
-var dailyFirstLastMap = {};
-
-// Loop over the production data to store the first and last value for each day
-for (var i = 0; i < productionChart.data.labels.length; i++) {
-    var date = new Date(productionChart.data.labels[i]);  // Date from chart labels
-    var currentCumulative = dailyProductionData[i]; // Get the current day's cumulative value
-
-    // Check if the date belongs to the current month
-    if (date.getMonth() === currentMonth) {
-        var day = date.getDate();  // Get the day of the month (1, 2, 3, ...)
-        var formattedDate = `${date.toLocaleString("en-US", { month: "short" })} ${day < 10 ? "0" + day : day}`; // Format the date (e.g., OCT 01)
-
-        // If it's the first entry of the day, store it as the first value
-        if (!dailyFirstLastMap[day]) {
-            dailyFirstLastMap[day] = { first: currentCumulative, last: currentCumulative };
+        // Update real-time display values
+        function updateRealTimeDisplay(data) {
+            const latestValue = parseFloat(data.length).toFixed(2);
+            const latestTimestamp = data.timestamp * 1000;
+            const currentTime = Date.now();
+            const minutesAgo = Math.floor((currentTime - latestTimestamp) / (1000 * 60));
+            
+            // Update displays
+            document.getElementById("lastValueDisplay").innerText = latestValue;
+            document.getElementById("lastUpdateDisplay").innerText = `${minutesAgo} minutes ago`;
+            
+            // Update machine status
+            updateMachineStatus(latestValue, latestTimestamp);
+            
+            // Calculate and update machine speed
+            updateMachineSpeed(latestValue, latestTimestamp);
         }
 
-        // Continuously update the last value of the day
-        dailyFirstLastMap[day].last = currentCumulative;
-    }
-}
-
-// Calculate the daily production by subtracting the first value from the last value of each day
-for (var day = 1; day <= daysInCurrentMonth; day++) {
-    var formattedDate = new Date(new Date().getFullYear(), currentMonth, day)
-        .toLocaleDateString("en-US", { month: "short", day: "2-digit" }); // Format the date (e.g., "Oct 01")
-    var productionValue = 0;
-
-    if (dailyFirstLastMap[day]) {
-        var firstValue = dailyFirstLastMap[day].first;
-        var lastValue = dailyFirstLastMap[day].last;
-        productionValue = lastValue - firstValue;  // Production for the day
-    }
-
-    dailySheetData.push([formattedDate, productionValue]); // Push each date and its production to the sheet
-}
-
-// Create the Daily Production sheet and append it to the workbook
-var dailySheet = XLSX.utils.aoa_to_sheet(dailySheetData);
-XLSX.utils.book_append_sheet(wb, dailySheet, "Daily Production");
-
-
-
-// ============= Sheet 2: Monthly Production (Jan - Dec) =============
-    var monthlySheetData = [["Month", "Total Monthly Production"]]; // Headers for Monthly Production sheet
-    var monthlyTotals = {}; // Object to keep track of monthly totals
-    var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; // Month names
-
-    // Loop over the chart data to compute monthly production totals
-    for (var i = 0; i < productionChart.data.labels.length; i++) {
-        var date = new Date(productionChart.data.labels[i]);  // Date from chart labels
-        var currentCumulative = dailyProductionData[i]; // Get the current cumulative production
-        var monthKey = date.getMonth(); // Get the month as a key (0 = January, 11 = December)
-
-        // Initialize monthly totals for each month
-        if (!monthlyTotals[monthKey]) {
-            monthlyTotals[monthKey] = { start: currentCumulative, end: currentCumulative };
-        } else {
-            monthlyTotals[monthKey].end = currentCumulative;
+        // Update machine status efficiently
+        function updateMachineStatus(currentLength, timestamp) {
+            const minutesSinceUpdate = (Date.now() - timestamp) / (1000 * 60);
+            let status;
+            
+            if (minutesSinceUpdate > 5) {
+                status = "Offline";
+            } else {
+                const lastLength = localStorage.getItem('lastKnownLength');
+                if (lastLength && parseFloat(lastLength).toFixed(2) !== currentLength) {
+                    status = "Running";
+                } else {
+                    status = "Stopped";
+                }
+            }
+            
+            const statusElement = document.getElementById("machineStatus");
+            statusElement.innerText = status;
+            statusElement.className = status; // Apply CSS class
+            
+            // Store for next comparison
+            localStorage.setItem('lastKnownLength', currentLength);
+            localStorage.setItem('lastKnownTimestamp', timestamp);
         }
-    }
 
+        // Update machine speed with optimized calculations
+        let lastSpeedCalculation = {
+            length: null,
+            timestamp: null
+        };
 
-
-
-
-
-
-    // Calculate total production for each month
-    for (var month = 0; month < 12; month++) {
-        if (monthlyTotals[month]) {
-            var monthProduction = monthlyTotals[month].end - monthlyTotals[month].start; // Calculate monthly production
-            monthlySheetData.push([monthNames[month], monthProduction]); // Add to the monthly sheet
-        } else {
-            // If there is no data for a particular month, set it to 0
-            monthlySheetData.push([monthNames[month], 0]);
+        function updateMachineSpeed(currentLength, timestamp) {
+            if (lastSpeedCalculation.length && lastSpeedCalculation.timestamp) {
+                const lengthDiff = currentLength - lastSpeedCalculation.length;
+                const timeDiff = (timestamp - lastSpeedCalculation.timestamp) / 1000; // in seconds
+                
+                if (timeDiff > 0 && timeDiff < 300) { // Valid time window
+                    const speed = (lengthDiff / timeDiff) * 60; // Convert to per minute
+                    document.getElementById("machineSpeed").innerText = `${speed.toFixed(2)} M/min`;
+                }
+            }
+            
+            // Update for next calculation
+            lastSpeedCalculation = {
+                length: currentLength,
+                timestamp: timestamp
+            };
         }
-    }
 
-    // Create the Monthly Production sheet and append it to the workbook
-    var monthlySheet = XLSX.utils.aoa_to_sheet(monthlySheetData);
-    XLSX.utils.book_append_sheet(wb, monthlySheet, "Monthly Production");
+        // Update chart with latest point
+        function updateChartWithLatestPoint(data) {
+            const timestamp = data.timestamp * 1000;
+            const length = parseFloat(data.length);
+            const date = new Date(timestamp);
+            const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth()+1).toString().padStart(2, '0')}`;
+            
+            // Add to chart data (limit size for performance)
+            productionChart.data.labels.push(formattedDate);
+            productionChart.data.datasets[0].data.push(length);
+            
+            // Limit chart data points
+            if (productionChart.data.labels.length > OPTIMIZATION_CONFIG.CHART_DATA_POINTS) {
+                productionChart.data.labels.shift();
+                productionChart.data.datasets[0].data.shift();
+            }
+            
+            // Update chart efficiently
+            productionChart.update('none');
+            
+            // Update production calculations periodically
+            if (Date.now() - calculationsCache.timestamp > OPTIMIZATION_CONFIG.CACHE_DURATION) {
+                calculateAndCacheProductionValues();
+            }
+        }
 
-    // Export the workbook as an Excel file
-    XLSX.writeFile(wb, "ProductionReport.xlsx");
-}
+        // Calculate and cache production values
+        function calculateAndCacheProductionValues() {
+            const labels = productionChart.data.labels;
+            const values = productionChart.data.datasets[0].data;
+            
+            if (labels.length < 2) return;
+            
+            // Calculate yesterday's production
+            const yesterdayProduction = calculateYesterdayProduction(labels, values);
+            document.getElementById("perDayProduction").innerText = yesterdayProduction.toFixed(2);
+            
+            // Calculate month's production
+            const monthProduction = calculateMonthProduction(labels, values);
+            document.getElementById("perMonthProduction").innerText = monthProduction.toFixed(2);
+            
+            // Cache results
+            calculationsCache = {
+                daily: yesterdayProduction,
+                monthly: monthProduction,
+                timestamp: Date.now()
+            };
+        }
 
+        // Calculate yesterday's production efficiently
+        function calculateYesterdayProduction(labels, values) {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            
+            const yesterdayStr = `${yesterday.getDate().toString().padStart(2, '0')}/${(yesterday.getMonth()+1).toString().padStart(2, '0')}`;
+            
+            let yesterdayValues = [];
+            
+            for (let i = 0; i < labels.length; i++) {
+                if (labels[i] === yesterdayStr) {
+                    yesterdayValues.push(values[i]);
+                }
+            }
+            
+            if (yesterdayValues.length >= 2) {
+                return yesterdayValues[yesterdayValues.length - 1] - yesterdayValues[0];
+            }
+            
+            return 0;
+        }
 
-  // Logout functionality
-        document.getElementById('logoutButton').addEventListener('click', function() {
-            localStorage.setItem("loggedIn", "false"); // Reset login flag
-            alert('You have been logged out.');
-            window.location.href = "index.html"; // Redirect to login page
-        });
+        // Calculate month's production efficiently
+        function calculateMonthProduction(labels, values) {
+            const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
+            let monthValues = [];
+            
+            for (let i = 0; i < labels.length; i++) {
+                if (labels[i].endsWith(`/${currentMonth}`)) {
+                    monthValues.push(values[i]);
+                }
+            }
+            
+            if (monthValues.length >= 2) {
+                return monthValues[monthValues.length - 1] - monthValues[0];
+            }
+            
+            return 0;
+        }
 
-        // Function to navigate to main.html
+        // Update UI with recent data (for fast initial display)
+        function updateUIWithRecentData(data) {
+            if (!data) return;
+            
+            const keys = Object.keys(data);
+            if (keys.length > 0) {
+                const latestKey = keys[keys.length - 1];
+                const latestData = data[latestKey];
+                
+                if (latestData) {
+                    document.getElementById("lastValueDisplay").innerText = parseFloat(latestData.length).toFixed(2);
+                    
+                    const minutesAgo = Math.floor((Date.now() - (latestData.timestamp * 1000)) / (1000 * 60));
+                    document.getElementById("lastUpdateDisplay").innerText = `${minutesAgo} minutes ago`;
+                }
+            }
+        }
+
+        // Export to Excel function (optimized)
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const labels = productionChart.data.labels;
+            const values = productionChart.data.datasets[0].data;
+            
+            // Prepare daily sheet data
+            const dailyData = [["Date", "Daily Production"]];
+            const dailyMap = {};
+            
+            // Group by date
+            for (let i = 0; i < labels.length; i++) {
+                const date = labels[i];
+                if (!dailyMap[date]) {
+                    dailyMap[date] = {
+                        first: values[i],
+                        last: values[i]
+                    };
+                }
+                dailyMap[date].last = values[i];
+            }
+            
+            // Calculate daily production
+            Object.keys(dailyMap).sort().forEach(date => {
+                const production = dailyMap[date].last - dailyMap[date].first;
+                dailyData.push([date, production]);
+            });
+            
+            const dailySheet = XLSX.utils.aoa_to_sheet(dailyData);
+            XLSX.utils.book_append_sheet(wb, dailySheet, "Daily Production");
+            
+            // Prepare monthly sheet data
+            const monthlyData = [["Month", "Total Monthly Production"]];
+            const monthNames = ["January", "February", "March", "April", "May", "June", 
+                              "July", "August", "September", "October", "November", "December"];
+            const monthlyMap = {};
+            
+            // Group by month
+            for (let i = 0; i < labels.length; i++) {
+                const monthIndex = parseInt(labels[i].split('/')[1]) - 1;
+                if (!monthlyMap[monthIndex]) {
+                    monthlyMap[monthIndex] = {
+                        first: values[i],
+                        last: values[i]
+                    };
+                }
+                monthlyMap[monthIndex].last = values[i];
+            }
+            
+            // Calculate monthly production
+            monthNames.forEach((monthName, index) => {
+                const production = monthlyMap[index] ? monthlyMap[index].last - monthlyMap[index].first : 0;
+                monthlyData.push([monthName, production]);
+            });
+            
+            const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
+            XLSX.utils.book_append_sheet(wb, monthlySheet, "Monthly Production");
+            
+            XLSX.writeFile(wb, "ProductionReport.xlsx");
+        }
+
+        // Show error message
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: #ff4444;
+                color: white;
+                padding: 15px;
+                border-radius: 5px;
+                z-index: 10000;
+            `;
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        // Go back function
         function goBack() {
             window.location.href = 'main.html';
         }
 
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Anonymous authentication
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    loadInitialData();
+                } else {
+                    firebase.auth().signInAnonymously().catch(console.error);
+                }
+            });
 
-let logoutTimer;
+            // Auto-logout timer
+            let logoutTimer;
+            function resetTimer() {
+                clearTimeout(logoutTimer);
+                logoutTimer = setTimeout(() => {
+                    localStorage.setItem("loggedIn", "false");
+                    window.location.href = "index.html";
+                }, 120000);
+            }
 
-// Function to reset the logout timer
-function resetTimer() {
-    clearTimeout(logoutTimer); // Clear any existing timer
-    logoutTimer = setTimeout(logoutUser, 120000); // Set new timer for 1 min (60000 ms)
-}
+            // Activity listeners
+            ['mousemove', 'keypress', 'touchstart', 'click'].forEach(event => {
+                document.addEventListener(event, resetTimer);
+            });
+            resetTimer();
+        });
 
-// Function to log out the user
-function logoutUser() {
-    localStorage.setItem("loggedIn", "false"); // Reset login flag
-    window.location.href = "index.html"; // Redirect to login page
-}
-
-// Event listeners for user activity
-document.addEventListener("mousemove", resetTimer);
-document.addEventListener("keypress", resetTimer);
-document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
-document.addEventListener("click", resetTimer);
-
-// Start the timer when the page loads
-resetTimer();
-
+        // Disable right-click and dev tools
+        document.addEventListener("contextmenu", e => e.preventDefault());
+        document.addEventListener("keydown", e => {
+            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || 
+                (e.ctrlKey && e.key === "U")) {
+                e.preventDefault();
+            }
+        });
     </script>
-
-<script>
-    document.addEventListener("contextmenu", function(event) {
-        event.preventDefault();
-    });
-
-    document.addEventListener("keydown", function(event) {
-        // Disable F12, Ctrl+Shift+I, Ctrl+U
-        if (event.key === "F11" || 
-            (event.ctrlKey && event.shiftKey && event.key === "I") || 
-            (event.ctrlKey && event.key === "U")) {
-            event.preventDefault();
-        }
-    });
-</script>
-
-
 </body>
 </html>
