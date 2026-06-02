@@ -118,14 +118,22 @@
     border-left: 5px solid #0062cc;
 }
 
-.info-box:nth-child(5) {  /* Month Production */
-    background: linear-gradient(135deg, #ff416c, #ff4b2b); /* Pink/Red */
-    border-left: 5px solid #c0392b;
-}
+
 
 .info-box:nth-child(6) {  /* Machine Status */
     background: linear-gradient(135deg, #556270, #4ecdc4); /* Gray/Teal */
     border-left: 5px solid #2c3e50;
+}
+.info-box:nth-child(6) strong {
+    display: block;
+    margin-bottom: 10px; /* Add space between label and value */
+}
+
+.info-box:nth-child(6) #machineStatus {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 5px;
 }
 
 .info-box:nth-child(7) {  /* Machine Speed */
@@ -230,14 +238,29 @@
         }
     }
 
+/* Simple fix for status visibility */
 #machineStatus {
     font-weight: bold;
+    font-size: 0.8 rem;
+    color: white !important; /* Force white text */
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Add shadow for contrast */
+    background-color: rgba(0, 0, 0, 0.15); /* Subtle dark background */
+    padding: 5px 15px;
+    border-radius: 20px;
+    display: inline-block;
 }
-.Running {
-    color: #28a745; /* Green */
+
+/* Keep your status colors for the subtle background hint */
+#machineStatus.Running {
+    background-color: rgba(40, 167, 69, 0.3) !important;
 }
-.Stopped {
-    color: #dc3545; /* Red */
+
+#machineStatus.Stopped {
+    background-color: rgba(220, 53, 69, 0.3) !important;
+}
+
+#machineStatus.Offline {
+    background-color: rgba(255, 193, 7, 0.3) !important;
 }
 [data-status="inactive"] {
     color: #ffc107; /* Yellow */
@@ -305,6 +328,23 @@
             <button class="export-button" onclick="exportToExcel()">Export Production Data to Excel</button>
         </div>
     </div>
+<!-- Day-wise Speed Chart -->
+<div class="section">
+    <h2>Daily Speed Analysis</h2>
+    
+    <!-- Date selector -->
+    <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+        <label style="font-weight: bold;">Select Date:</label>
+        <input type="date" id="dateSelector" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <button onclick="loadDayData()" class="export-button" style="background: #28a745;">Load Data</button>
+        <button onclick="loadTodayData()" class="export-button" style="background: #007bff;">Today</button>
+    </div>
+    
+    <!-- Speed chart -->
+    <div class="chart-container">
+        <canvas id="dailySpeedChart"></canvas>
+    </div>
+</div>
 
     <footer>
         Systematic Industries Ltd | Production Monitoring System © 2025
@@ -320,11 +360,124 @@
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        var database = firebase.database();
+        firebase.initializeApp(firebaseConfig);// Fix for minimized window live update issue
+var database = firebase.database();
+
+// Add this code to handle page visibility
+document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === 'visible') {
+        console.log("Page is now visible - refreshing data...");
+        
+        // Force refresh all displays
+        refreshAllData();
+        
+        // Update last seen timestamp
+        var statusElement = document.getElementById("machineStatus");
+        if (statusElement) {
+            // Temporarily show checking status
+            statusElement.innerText = "Checking...";
+        }
+        
+        // Force a quick reconnection by re-querying the latest data
+        database.ref('Sensor/readings').limitToLast(1).once('value', function(snapshot) {
+            snapshot.forEach(function(childSnapshot) {
+                var data = childSnapshot.val();
+                var latestTimestamp = data.timestamp * 1000;
+                var minutesAgo = Math.floor((Date.now() - latestTimestamp) / (1000 * 60));
+                
+                // Update last update display
+                document.getElementById("lastUpdateDisplay").innerText = minutesAgo + " minutes ago";
+                
+                // Force status recalculation
+                if (minutesAgo <= 5) {
+                    // Check if machine is running based on recent speed
+                    var speedElem = document.getElementById("machineSpeed");
+                    if (speedElem && speedElem.innerText !== "N/A") {
+                        var speedValue = parseFloat(speedElem.innerText);
+                        statusElement.innerText = speedValue > 0.1 ? "Running" : "Stopped";
+                        statusElement.className = speedValue > 0.1 ? "Running" : "Stopped";
+                    } else {
+                        statusElement.innerText = "Stopped";
+                        statusElement.className = "Stopped";
+                    }
+                } else {
+                    statusElement.innerText = "Offline";
+                    statusElement.className = "Offline";
+                }
+            });
+        });
+    }
+});
+
+// Function to refresh all data when page becomes visible
+function refreshAllData() {
+    console.log("Refreshing all dashboard data...");
+    
+    // Refresh the chart data
+    var sensorRef = database.ref('Sensor/readings').orderByKey().limitToLast(3000);
+    sensorRef.once('value', function(snapshot) {
+        var timeLabels = [];
+        var productionValues = [];
+        
+        snapshot.forEach(function(childSnapshot) {
+            var data = childSnapshot.val();
+            var timestamp = data.timestamp;
+            var length = data.length;
+            
+            var timestampInMillis = timestamp * 1000;
+            var formattedDate = new Date(timestampInMillis).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit'
+            });
+            
+            timeLabels.push(formattedDate);
+            productionValues.push(length);
+        });
+        
+        // Update chart if it exists
+        if (productionChart) {
+            productionChart.data.labels = timeLabels;
+            productionChart.data.datasets[0].data = productionValues;
+            productionChart.update();
+        }
+        
+        // Recalculate yesterday and monthly production
+        calculateYesterdayProductionFromChart();
+        calculateMonthlyProductionFromChart();
+    });
+    
+    // Refresh per day production
+    database.ref('Sensor/perday').once('value', function(snapshot) {
+        const data = snapshot.val();
+        if (data && data.count !== undefined) {
+            document.getElementById("last24HourProduction").innerText = 
+                parseFloat(data.count).toFixed(1);
+        }
+    });
+    
+    // Refresh daily speed chart if date is selected
+    var dateSelector = document.getElementById('dateSelector');
+    if (dateSelector && dateSelector.value) {
+        calculateDailySpeed(dateSelector.value);
+    }
+}
+
+// Add this to ensure WebSocket connection stays alive
+// Create a heartbeat to keep connection active
+setInterval(function() {
+    if (document.visibilityState === 'visible') {
+        // Only ping when page is visible to save resources
+        database.ref('.info/connected').once('value', function(snapshot) {
+            if (snapshot.val() === true) {
+                console.log("Firebase connection is active");
+            }
+        });
+    }
+}, 60000); // Check every 30 seconds
 
         var dailyProductionData = [];
-        var monthlyProductionData = [];
+       
 
 
 
@@ -423,7 +576,7 @@ var lastKnownLength = null; // To track the last known length
 
         // Function to monitor Firebase data and update the chart
         function monitorData() {
-            var sensorRef = database.ref('Sensor/readings');
+            var sensorRef = database.ref('Sensor/readings').orderByKey().limitToLast(3000);
             sensorRef.on('value', function(snapshot) {
                 var timeLabels = [];
                 var productionValues = [];
@@ -457,46 +610,19 @@ var lastKnownLength = null; // To track the last known length
                 productionChart.data.labels = timeLabels;
                 productionChart.data.datasets[0].data = productionValues;
                 productionChart.update();
+		 loadTodayData();
 
 
 		 // Calculate yesterday's production from chart
         calculateYesterdayProductionFromChart();
 
         // Calculate monthly production from chart
-        calculateMonthlyProductionFromChart();
 
 
 
 
-function calculateMonthlyProductionFromChart() {
-    const chartData = productionChart.data.datasets[0].data;  
-    const timeLabels = productionChart.data.labels;  
 
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
 
-    let firstValue = null;
-    let lastValue = null;
-
-    for (let i = 0; i < timeLabels.length; i++) {
-        const date = new Date(timeLabels[i]);
-        const month = date.getMonth();
-        const year = date.getFullYear();
-
-        if (month === currentMonth && year === currentYear) {
-            if (firstValue === null) {
-                firstValue = chartData[i];
-            }
-            lastValue = chartData[i];
-        }
-    }
-
-    const monthProduction = firstValue !== null && lastValue !== null 
-        ? (lastValue - firstValue).toFixed(2) 
-        : "N/A";
-
-    document.getElementById("perMonthProduction").innerText = monthProduction;
-}
 
 function calculateYesterdayProductionFromChart() {
     const chartData = productionChart.data.datasets[0].data;  
@@ -576,6 +702,7 @@ let lastKnownLength = localStorage.getItem('lastKnownLength') || null;
 let lastKnownTimestamp = localStorage.getItem('lastKnownTimestamp') || null;
 let lastSpeedUpdateTime = null;
 
+
 // Listen for Firebase updates
 var sensorRef = database.ref('Sensor/readings');
 sensorRef.limitToLast(1).on('child_added', function(snapshot) {
@@ -604,21 +731,47 @@ sensorRef.limitToLast(1).on('child_added', function(snapshot) {
         document.getElementById("machineSpeed").innerText = "N/A";
     }
 
-    // Determine machine status
+    // IMPROVED MACHINE STATUS DETECTION
     var minutesSinceUpdate = (Date.now() - latestTimestamp) / (1000 * 60);
-    var newStatus;
-    if (minutesSinceUpdate > 5) {
-        newStatus = "Offline";
-    } 
-    else if (lastKnownLength !== null && parseFloat(lastKnownLength).toFixed(2) !== latestValue) {
-        newStatus = "Running";
-    } 
-    else {
-        newStatus = "Stopped";
+    var newStatus = "Offline"; // Default status
+    
+    if (minutesSinceUpdate <= 5) {
+        // Machine is online (data received within 5 minutes)
+        if (lastKnownLength !== null) {
+            const lengthDifference = parseFloat(latestValue) - parseFloat(lastKnownLength);
+            
+            // Machine is RUNNING if:
+            // 1. Length has increased by at least 0.01 (adjust this threshold as needed)
+            // 2. AND the speed calculation shows positive movement
+            if (lengthDifference > 0.01) {
+                newStatus = "Running";
+            } else {
+                // Check if we have speed data that indicates movement
+                const currentSpeedElem = document.getElementById("machineSpeed");
+                if (currentSpeedElem && currentSpeedElem.innerText !== "N/A") {
+                    const speedValue = parseFloat(currentSpeedElem.innerText);
+                    if (speedValue > 0.1) { // Adjust threshold as needed
+                        newStatus = "Running";
+                    } else {
+                        newStatus = "Stopped";
+                    }
+                } else {
+                    newStatus = "Stopped";
+                }
+            }
+        } else {
+            // First reading
+            newStatus = "Stopped";
+        }
     }
     
-    // Update UI and storage
-    document.getElementById("machineStatus").innerText = newStatus;
+    // Update UI
+
+const statusElement = document.getElementById("machineStatus");
+statusElement.innerText = newStatus;
+statusElement.className = newStatus; // This adds the CSS class for color
+    
+    // Store values for next comparison
     localStorage.setItem('lastKnownLength', latestValue);
     localStorage.setItem('lastKnownTimestamp', latestTimestamp);
     
@@ -626,6 +779,8 @@ sensorRef.limitToLast(1).on('child_added', function(snapshot) {
     lastKnownLength = latestValue;
     lastKnownTimestamp = latestTimestamp;
 });
+
+
 
             });
 
@@ -677,110 +832,345 @@ firebase.auth().onAuthStateChanged((user) => {
 
 
 
-// Function to export daily and monthly production to Excel
+// Modified export function with loading state to prevent multiple clicks
+let isExporting = false; // Add this line at the top of your script with other variables
+
 function exportToExcel() {
-    var wb = XLSX.utils.book_new(); // Create a new workbook
-
-
-
-
-
-
-// ============= Sheet 1: Daily Production (Current Month) =============
-// Initialize the array for the daily production sheet with headers
-var dailySheetData = [["Date", "Daily Production"]]; // Headers for daily production sheet
-var currentMonth = new Date().getMonth(); // Get the current month (0 = January, 9 = October)
-var dailyProductionData = productionChart.data.datasets[0].data; // Get cumulative data from the chart
-var daysInCurrentMonth = new Date(new Date().getFullYear(), currentMonth + 1, 0).getDate(); // Get number of days in current month
-
-// Create an object to store the first and last production value of each day
-var dailyFirstLastMap = {};
-
-// Loop over the production data to store the first and last value for each day
-for (var i = 0; i < productionChart.data.labels.length; i++) {
-    var date = new Date(productionChart.data.labels[i]);  // Date from chart labels
-    var currentCumulative = dailyProductionData[i]; // Get the current day's cumulative value
-
-    // Check if the date belongs to the current month
-    if (date.getMonth() === currentMonth) {
-        var day = date.getDate();  // Get the day of the month (1, 2, 3, ...)
-        var formattedDate = `${date.toLocaleString("en-US", { month: "short" })} ${day < 10 ? "0" + day : day}`; // Format the date (e.g., OCT 01)
-
-        // If it's the first entry of the day, store it as the first value
-        if (!dailyFirstLastMap[day]) {
-            dailyFirstLastMap[day] = { first: currentCumulative, last: currentCumulative };
+    // Prevent multiple clicks
+    if (isExporting) {
+        alert("Export already in progress. Please wait...");
+        return;
+    }
+    
+    isExporting = true;
+    var exportBtn = document.querySelector('.export-button[onclick="exportToExcel()"]');
+    var originalText = exportBtn ? exportBtn.innerText : "Export Production Data to Excel";
+    
+    // Show loading state
+    if (exportBtn) {
+        exportBtn.innerText = "Generating Report...";
+        exportBtn.disabled = true;
+        exportBtn.style.opacity = "0.6";
+        exportBtn.style.cursor = "not-allowed";
+    }
+    
+    alert("Please wait while we fetch all production data from the database...");
+    
+    // Query ALL historical data from Firebase
+    var sensorRef = database.ref('Sensor/readings');
+    
+    sensorRef.once('value', function(snapshot) {
+        if (!snapshot.exists()) {
+            alert("No production data found!");
+            resetExportButton();
+            return;
         }
-
-        // Continuously update the last value of the day
-        dailyFirstLastMap[day].last = currentCumulative;
+        
+        var wb = XLSX.utils.book_new(); // Create a new workbook
+        var allData = [];
+        
+        // Convert Firebase data to array
+        snapshot.forEach(function(childSnapshot) {
+            var data = childSnapshot.val();
+            allData.push({
+                timestamp: new Date(data.timestamp * 1000),
+                length: parseFloat(data.length)
+            });
+        });
+        
+        // Sort data by timestamp
+        allData.sort((a, b) => a.timestamp - b.timestamp);
+        
+        // ============= SHEET 1: RAW DATA =============
+        var rawSheetData = [
+            ["Timestamp", "Date", "Time", "Cumulative Length (M)"]
+        ];
+        
+        allData.forEach(item => {
+            var dateStr = item.timestamp.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            var timeStr = item.timestamp.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            rawSheetData.push([
+                item.timestamp.toISOString(),
+                dateStr,
+                timeStr,
+                item.length
+            ]);
+        });
+        
+        var rawSheet = XLSX.utils.aoa_to_sheet(rawSheetData);
+        XLSX.utils.book_append_sheet(wb, rawSheet, "Raw Production Data");
+        
+        // ============= SHEET 2: DAILY PRODUCTION =============
+        var dailySheetData = [["Date", "Daily Production (M)", "Start Value", "End Value", "Number of Records"]];
+        var dailyData = {};
+        
+        // Group data by date
+        allData.forEach(item => {
+            var dateKey = item.timestamp.toISOString().split('T')[0]; // YYYY-MM-DD
+            var dateFormatted = item.timestamp.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit'
+            });
+            
+            if (!dailyData[dateKey]) {
+                dailyData[dateKey] = {
+                    date: dateFormatted,
+                    firstValue: item.length,
+                    lastValue: item.length,
+                    count: 1,
+                    records: [item.length]
+                };
+            } else {
+                dailyData[dateKey].lastValue = item.length;
+                dailyData[dateKey].count++;
+                dailyData[dateKey].records.push(item.length);
+            }
+        });
+        
+        // Calculate daily production and add to sheet
+        Object.keys(dailyData).sort().forEach(dateKey => {
+            var dayData = dailyData[dateKey];
+            var dailyProduction = (dayData.lastValue - dayData.firstValue).toFixed(3);
+            
+            dailySheetData.push([
+                dayData.date,
+                dailyProduction,
+                dayData.firstValue.toFixed(3),
+                dayData.lastValue.toFixed(3),
+                dayData.count
+            ]);
+        });
+        
+        var dailySheet = XLSX.utils.aoa_to_sheet(dailySheetData);
+        XLSX.utils.book_append_sheet(wb, dailySheet, "Daily Production");
+        
+        // ============= SHEET 3: MONTHLY PRODUCTION =============
+        var monthlySheetData = [["Month", "Monthly Production (M)", "Start Date", "End Date", "Days with Data"]];
+        var monthlyData = {};
+        
+        // Group data by month
+        allData.forEach(item => {
+            var monthKey = item.timestamp.getFullYear() + '-' + 
+                          (item.timestamp.getMonth() + 1).toString().padStart(2, '0');
+            var monthName = item.timestamp.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long'
+            });
+            
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = {
+                    name: monthName,
+                    firstValue: item.length,
+                    lastValue: item.length,
+                    firstDate: item.timestamp,
+                    lastDate: item.timestamp,
+                    days: new Set()
+                };
+            } else {
+                monthlyData[monthKey].lastValue = item.length;
+                monthlyData[monthKey].lastDate = item.timestamp;
+            }
+            
+            // Add date to unique days set
+            var dateStr = item.timestamp.toISOString().split('T')[0];
+            monthlyData[monthKey].days.add(dateStr);
+        });
+        
+        // Calculate monthly production and add to sheet
+        Object.keys(monthlyData).sort().forEach(monthKey => {
+            var monthData = monthlyData[monthKey];
+            var monthlyProduction = (monthData.lastValue - monthData.firstValue).toFixed(3);
+            
+            monthlySheetData.push([
+                monthData.name,
+                monthlyProduction,
+                monthData.firstDate.toLocaleDateString(),
+                monthData.lastDate.toLocaleDateString(),
+                monthData.days.size
+            ]);
+        });
+        
+        var monthlySheet = XLSX.utils.aoa_to_sheet(monthlySheetData);
+        XLSX.utils.book_append_sheet(wb, monthlySheet, "Monthly Production");
+        
+        // ============= SHEET 4: YEARLY PRODUCTION =============
+        var yearlySheetData = [["Year", "Yearly Production (M)", "Start Date", "End Date", "Months with Data"]];
+        var yearlyData = {};
+        
+        // Group data by year
+        allData.forEach(item => {
+            var yearKey = item.timestamp.getFullYear().toString();
+            
+            if (!yearlyData[yearKey]) {
+                yearlyData[yearKey] = {
+                    year: yearKey,
+                    firstValue: item.length,
+                    lastValue: item.length,
+                    firstDate: item.timestamp,
+                    lastDate: item.timestamp,
+                    months: new Set()
+                };
+            } else {
+                yearlyData[yearKey].lastValue = item.length;
+                yearlyData[yearKey].lastDate = item.timestamp;
+            }
+            
+            // Add month to unique months set
+            var monthStr = item.timestamp.getMonth() + 1;
+            yearlyData[yearKey].months.add(monthStr);
+        });
+        
+        // Calculate yearly production and add to sheet
+        Object.keys(yearlyData).sort().forEach(yearKey => {
+            var yearData = yearlyData[yearKey];
+            var yearlyProduction = (yearData.lastValue - yearData.firstValue).toFixed(3);
+            
+            yearlySheetData.push([
+                yearData.year,
+                yearlyProduction,
+                yearData.firstDate.toLocaleDateString(),
+                yearData.lastDate.toLocaleDateString(),
+                yearData.months.size
+            ]);
+        });
+        
+        var yearlySheet = XLSX.utils.aoa_to_sheet(yearlySheetData);
+        XLSX.utils.book_append_sheet(wb, yearlySheet, "Yearly Production");
+        
+        // ============= SHEET 5: SUMMARY =============
+        var summarySheetData = [
+            ["PRODUCTION REPORT SUMMARY"],
+            ["Generated on:", new Date().toLocaleString()],
+            ["Total Records:", allData.length],
+            ["Date Range:", allData[0].timestamp.toLocaleDateString() + " to " + 
+                            allData[allData.length-1].timestamp.toLocaleDateString()],
+            [""],
+            ["DAILY STATISTICS"],
+            ["Total Days with Data:", Object.keys(dailyData).length],
+            ["Average Daily Production:", calculateAverageDailyProduction(dailyData) + " M"],
+            ["Highest Daily Production:", findMaxDailyProduction(dailyData)],
+            ["Lowest Daily Production:", findMinDailyProduction(dailyData)],
+            [""],
+            ["MONTHLY STATISTICS"],
+            ["Total Months with Data:", Object.keys(monthlyData).length],
+            ["Average Monthly Production:", calculateAverageMonthlyProduction(monthlyData) + " M"],
+            ["Highest Monthly Production:", findMaxMonthlyProduction(monthlyData)],
+            [""],
+            ["YEARLY STATISTICS"],
+            ["Total Years with Data:", Object.keys(yearlyData).length],
+            ["Total Cumulative Production:", 
+             (allData[allData.length-1].length - allData[0].length).toFixed(3) + " M"]
+        ];
+        
+        var summarySheet = XLSX.utils.aoa_to_sheet(summarySheetData);
+        XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+        
+        // Export the workbook
+        var filename = "Production_Report_" + new Date().toISOString().split('T')[0] + ".xlsx";
+        XLSX.writeFile(wb, filename);
+        
+        // Reset button after export is complete
+        resetExportButton();
+        alert("Excel report generated successfully!");
+        
+    }, function(error) {
+        console.error("Error fetching data:", error);
+        alert("Error fetching data from database. Please try again.");
+        resetExportButton();
+    });
+    
+    // Helper function to reset button state
+    function resetExportButton() {
+        isExporting = false;
+        if (exportBtn) {
+            exportBtn.innerText = originalText;
+            exportBtn.disabled = false;
+            exportBtn.style.opacity = "1";
+            exportBtn.style.cursor = "pointer";
+        }
     }
 }
 
-// Calculate the daily production by subtracting the first value from the last value of each day
-for (var day = 1; day <= daysInCurrentMonth; day++) {
-    var formattedDate = new Date(new Date().getFullYear(), currentMonth, day)
-        .toLocaleDateString("en-US", { month: "short", day: "2-digit" }); // Format the date (e.g., "Oct 01")
-    var productionValue = 0;
-
-    if (dailyFirstLastMap[day]) {
-        var firstValue = dailyFirstLastMap[day].first;
-        var lastValue = dailyFirstLastMap[day].last;
-        productionValue = lastValue - firstValue;  // Production for the day
-    }
-
-    dailySheetData.push([formattedDate, productionValue]); // Push each date and its production to the sheet
+// Helper functions for summary calculations
+function calculateAverageDailyProduction(dailyData) {
+    var total = 0;
+    var count = 0;
+    
+    Object.values(dailyData).forEach(day => {
+        total += (day.lastValue - day.firstValue);
+        count++;
+    });
+    
+    return count > 0 ? (total / count).toFixed(3) : "0.000";
 }
 
-// Create the Daily Production sheet and append it to the workbook
-var dailySheet = XLSX.utils.aoa_to_sheet(dailySheetData);
-XLSX.utils.book_append_sheet(wb, dailySheet, "Daily Production");
-
-
-
-// ============= Sheet 2: Monthly Production (Jan - Dec) =============
-    var monthlySheetData = [["Month", "Total Monthly Production"]]; // Headers for Monthly Production sheet
-    var monthlyTotals = {}; // Object to keep track of monthly totals
-    var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; // Month names
-
-    // Loop over the chart data to compute monthly production totals
-    for (var i = 0; i < productionChart.data.labels.length; i++) {
-        var date = new Date(productionChart.data.labels[i]);  // Date from chart labels
-        var currentCumulative = dailyProductionData[i]; // Get the current cumulative production
-        var monthKey = date.getMonth(); // Get the month as a key (0 = January, 11 = December)
-
-        // Initialize monthly totals for each month
-        if (!monthlyTotals[monthKey]) {
-            monthlyTotals[monthKey] = { start: currentCumulative, end: currentCumulative };
-        } else {
-            monthlyTotals[monthKey].end = currentCumulative;
-        }
-    }
-
-
-
-
-
-
-
-    // Calculate total production for each month
-    for (var month = 0; month < 12; month++) {
-        if (monthlyTotals[month]) {
-            var monthProduction = monthlyTotals[month].end - monthlyTotals[month].start; // Calculate monthly production
-            monthlySheetData.push([monthNames[month], monthProduction]); // Add to the monthly sheet
-        } else {
-            // If there is no data for a particular month, set it to 0
-            monthlySheetData.push([monthNames[month], 0]);
-        }
-    }
-
-    // Create the Monthly Production sheet and append it to the workbook
-    var monthlySheet = XLSX.utils.aoa_to_sheet(monthlySheetData);
-    XLSX.utils.book_append_sheet(wb, monthlySheet, "Monthly Production");
-
-    // Export the workbook as an Excel file
-    XLSX.writeFile(wb, "ProductionReport.xlsx");
+function calculateAverageMonthlyProduction(monthlyData) {
+    var total = 0;
+    var count = 0;
+    
+    Object.values(monthlyData).forEach(month => {
+        total += (month.lastValue - month.firstValue);
+        count++;
+    });
+    
+    return count > 0 ? (total / count).toFixed(3) : "0.000";
 }
 
+function findMaxDailyProduction(dailyData) {
+    var max = 0;
+    var maxDate = "";
+    
+    Object.entries(dailyData).forEach(([dateKey, day]) => {
+        var production = day.lastValue - day.firstValue;
+        if (production > max) {
+            max = production;
+            maxDate = day.date;
+        }
+    });
+    
+    return max > 0 ? max.toFixed(3) + " M on " + maxDate : "N/A";
+}
+
+function findMinDailyProduction(dailyData) {
+    var min = Infinity;
+    var minDate = "";
+    
+    Object.entries(dailyData).forEach(([dateKey, day]) => {
+        var production = day.lastValue - day.firstValue;
+        if (production < min && production > 0) {
+            min = production;
+            minDate = day.date;
+        }
+    });
+    
+    return min < Infinity ? min.toFixed(3) + " M on " + minDate : "N/A";
+}
+
+function findMaxMonthlyProduction(monthlyData) {
+    var max = 0;
+    var maxMonth = "";
+    
+    Object.values(monthlyData).forEach(month => {
+        var production = month.lastValue - month.firstValue;
+        if (production > max) {
+            max = production;
+            maxMonth = month.name;
+        }
+    });
+    
+    return max > 0 ? max.toFixed(3) + " M in " + maxMonth : "N/A";
+}
 
   // Logout functionality
         document.getElementById('logoutButton').addEventListener('click', function() {
@@ -833,6 +1223,152 @@ resetTimer();
             event.preventDefault();
         }
     });
+
+
+// Initialize Daily Speed Chart
+var dailySpeedCtx = document.getElementById('dailySpeedChart').getContext('2d');
+var dailySpeedChart = new Chart(dailySpeedCtx, {
+    type: 'line',
+    data: {
+        labels: ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', 
+                '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'],
+        datasets: [{
+            label: 'Speed (M/min)',
+            data: new Array(24).fill(null),
+            borderColor: '#ff6384',
+            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Speed (M/min)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Hour of Day'
+                }
+            }
+        }
+    }
+});
+
+// Set default date to today
+document.getElementById('dateSelector').valueAsDate = new Date();
+
+// Function to load data for selected date
+function loadDayData() {
+    var selectedDate = document.getElementById('dateSelector').value;
+    calculateDailySpeed(selectedDate);
+}
+
+// Function to load today's data
+function loadTodayData() {
+    document.getElementById('dateSelector').valueAsDate = new Date();
+    loadDayData();
+}
+
+// Function to calculate speed for a specific day
+function calculateDailySpeed(dateString) {
+    var sensorRef = database.ref('Sensor/readings');
+    
+    sensorRef.on('value', function(snapshot) {
+        // Clear previous data
+        var speeds = new Array(24).fill(null);
+        var hourlyReadings = {};
+        
+        // Initialize hourly structure
+        for (var i = 0; i < 24; i++) {
+            hourlyReadings[i] = [];
+        }
+        
+        // Filter and collect data for selected date
+        snapshot.forEach(function(childSnapshot) {
+            var data = childSnapshot.val();
+            var timestamp = data.timestamp * 1000;
+            var length = parseFloat(data.length);
+            var date = new Date(timestamp);
+            
+            // Format dates for comparison
+            var readingDate = date.toISOString().split('T')[0];
+            
+            if (readingDate === dateString) {
+                var hour = date.getHours();
+                hourlyReadings[hour].push({
+                    time: timestamp,
+                    length: length
+                });
+            }
+        });
+        
+        // Calculate speed for each hour
+        for (var hour = 0; hour < 24; hour++) {
+            var readings = hourlyReadings[hour];
+            
+            if (readings.length > 1) {
+                // Sort by time
+                readings.sort((a, b) => a.time - b.time);
+                
+                var totalTime = 0;
+                var totalLength = 0;
+                
+                // Calculate speed between consecutive readings
+                for (var i = 1; i < readings.length; i++) {
+                    var timeDiff = (readings[i].time - readings[i-1].time) / (1000 * 60); // in minutes
+                    var lengthDiff = readings[i].length - readings[i-1].length;
+                    
+                    if (timeDiff > 0 && timeDiff < 60) { // Valid reading within hour
+                        totalTime += timeDiff;
+                        totalLength += lengthDiff;
+                    }
+                }
+                
+                // Calculate average speed for this hour
+                if (totalTime > 0) {
+                    speeds[hour] = parseFloat((totalLength / totalTime).toFixed(2));
+                }
+            }
+        }
+        
+        // Update chart
+        dailySpeedChart.data.datasets[0].data = speeds;
+        dailySpeedChart.data.datasets[0].label = 'Speed (M/min) - ' + dateString;
+        dailySpeedChart.update();
+        
+        // Show summary
+        showSpeedSummary(speeds, dateString);
+    });
+}
+
+// Function to show speed summary
+function showSpeedSummary(speeds, dateString) {
+    var validSpeeds = speeds.filter(s => s !== null);
+    
+    if (validSpeeds.length > 0) {
+        var avg = validSpeeds.reduce((a, b) => a + b, 0) / validSpeeds.length;
+        var max = Math.max(...validSpeeds);
+        var min = Math.min(...validSpeeds);
+        var maxHour = speeds.indexOf(max);
+        var minHour = speeds.indexOf(min);
+        
+        console.log(`Speed Analysis for ${dateString}:`);
+        console.log(`Average: ${avg.toFixed(2)} M/min`);
+        console.log(`Peak: ${max} M/min at ${maxHour}:00`);
+        console.log(`Lowest: ${min} M/min at ${minHour}:00`);
+    }
+}
+
 </script>
 
 
