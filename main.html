@@ -46,18 +46,23 @@
         .device-card {
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            width: 250px;
+            padding: 25px;
+            width: 280px;
             text-align: center;
             color: white;
             transition: transform 0.3s ease;
+            position: relative;
         }
         .device-card:hover {
             transform: translateY(-5px);
         }
         .device-card h2 {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         .button {
             background-color: #007BFF;
@@ -67,7 +72,7 @@
             text-align: center;
             text-decoration: none;
             display: block;
-            margin: 10px 0;
+            margin: 8px 0;
             border-radius: 5px;
             font-size: 16px;
             transition: background-color 0.3s ease;
@@ -101,6 +106,65 @@
         .device-card:nth-child(4) {
             background-color: #17A2B8;
         }
+        
+        /* Status indicator styles */
+        .status-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px;
+        }
+        .status-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        .status-dot.blinking {
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .status-running {
+            background-color: #28a745;
+        }
+        .status-stopped {
+            background-color: #dc3545;
+        }
+        .status-offline {
+            background-color: #ffc107;
+        }
+        
+        /* Speed indicator */
+        .speed-indicator {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .speed-label {
+            font-weight: bold;
+        }
+        .speed-value {
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+        }
+        .speed-unit {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
         /* Footer styles */
         footer {
             position: fixed;
@@ -113,6 +177,7 @@
             color: white;
             z-index: 1000;
         }
+        
         /* Mobile responsiveness */
         @media (max-width: 768px) {
             .container {
@@ -124,10 +189,37 @@
                 max-width: 350px;
             }
         }
+
+ /* Simple white text with glow */
+.speed-indicator {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    margin: 15px 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.speed-value {
+    font-size: 30px;
+    font-weight: bold;
+    color: #ffffff !important; /* Force white color */
+    text-shadow: 
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 15px #007bff,
+        0 0 20px #007bff; /* Glow effect */
+}
+
+.speed-unit {
+    font-size: 13px;
+    color: #ffffff !important; /* Force white color */
+    font-weight: bold;
+}
     </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
 
@@ -136,10 +228,25 @@
 <h1>Control Dashboard Panel</h1>
 
 <div class="container">
-   <button id="logoutButton" class="button logout-button">Logout</button>
+    <button id="logoutButton" class="button logout-button">Logout</button>
 
+    <!-- Cladding 1 Machine Card -->
     <div class="device-card">
-        <h2>Cladding 1 </h2>
+        <h2>
+            Cladding 1
+            <span class="status-dot" id="cladding1-status-dot"></span>
+        </h2>
+        
+        <!-- Speed indicator -->
+        <div class="speed-indicator">
+            <span class="speed-label">Speed:</span>
+            <span class="speed-value">
+                <span id="cladding1-speed">0.00</span>
+                <span class="speed-unit"> M/min</span>
+            </span>
+        </div>
+        
+        <!-- Navigation Buttons -->
         <a href="d1prd.html" class="button">Production</a>
         <a href="d1downtime.html" class="button downtime-button">Downtime</a>
         <a href="Staff.html" class="button">Staff</a>
@@ -147,8 +254,23 @@
         <a href="oee.html" class="button">Equipment Effectiveness</a>
     </div>
 
+    <!-- Drawing 1 Machine Card -->
     <div class="device-card">
-        <h2>Drawing 1 ( 10 block) </h2>
+        <h2>
+            Drawing 1 (10 block)
+            <span class="status-dot" id="drawing1-status-dot"></span>
+        </h2>
+        
+        <!-- Speed indicator -->
+        <div class="speed-indicator">
+            <span class="speed-label">Speed:</span>
+            <span class="speed-value">
+                <span id="drawing-speed">0.00</span>
+                <span class="speed-unit"> M/min</span>
+            </span>
+        </div>
+        
+        <!-- Navigation Buttons -->
         <a href="D2prd.html" class="button">Production</a>
         <a href="D2 downtime.html" class="button downtime-button">Downtime</a>
         <a href="D2 Staff.html" class="button">Staff</a>
@@ -156,8 +278,22 @@
         <a href="D2 OEE.html" class="button">Equipment Effectiveness</a>
     </div>
 
+    <!-- Drawing 2 Machine Card -->
     <div class="device-card">
-        <h2>Drawing 2 ( 8 block)</h2>
+        <h2>
+            Drawing 2 (8 block)
+            <span class="status-dot" id="drawing2-status-dot"></span>
+        </h2>
+        <!-- Speed indicator -->
+        <div class="speed-indicator">
+            <span class="speed-label">Speed:</span>
+            <span class="speed-value">
+                <span id="drawing-speed">0.00</span>
+                <span class="speed-unit"> M/min</span>
+            </span>
+        </div>
+        
+        <!-- Navigation Buttons -->
         <a href="D3prd.html" class="button">Production</a>
         <a href="D3 downtime.html" class="button downtime-button">Downtime</a>
         <a href="D3 Staff.html" class="button">Staff</a>
@@ -171,37 +307,331 @@
 </footer>
 
 <script>
-  // Firebase configuration
+  // Firebase configuration from d1prd.html
   const firebaseConfig = {
-    apiKey: "AIzaSyCIoNQqv5fh6wiKPEvHRMFfM1S8o0NAa34",
-    authDomain: "customer--2-login.firebaseapp.com",
-    projectId: "customer--2-login",
-    storageBucket: "customer--2-login.appspot.com",
-    messagingSenderId: "79046345504",
-    appId: "1:79046345504:web:66ad31364bf99160780d45",
-    measurementId: "G-MJ2KKW6FKC"
+    apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
+    databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
   };
 
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-
-  // Check authentication state
-  auth.onAuthStateChanged((user) => {
-    if (!user && localStorage.getItem("loggedIn") !== "true") {
-      // Redirect to login page if not authenticated
-      window.location.href = "index.html";
+  const database = firebase.database();
+  
+  // Store data for each machine
+  const machineData = {
+    cladding1: { 
+      lastLength: null, 
+      lastTimestamp: null,
+      lastSpeed: 0,
+      sameReadingCount: 0
+    },
+    drawing1: { 
+      lastLength: null, 
+      lastTimestamp: null,
+      lastSpeed: 0,
+      sameReadingCount: 0
+    },
+    drawing2: { 
+      lastLength: null, 
+      lastTimestamp: null,
+      lastSpeed: 0,
+      sameReadingCount: 0
     }
-  });
+  };
+
+  // Machine status and speed monitoring function
+  function monitorMachineStatus(machineId) {
+    console.log(`Monitoring machine: ${machineId}`);
+    
+    // Use the main sensor path for all machines (adjust if different)
+    const sensorRef = database.ref('Sensor/readings');
+    
+    sensorRef.limitToLast(10).on('value', function(snapshot) {
+      const readings = [];
+      snapshot.forEach(function(childSnapshot) {
+        const data = childSnapshot.val();
+        if (data) {
+          readings.push({
+            length: parseFloat(data.length),
+            timestamp: data.timestamp * 1000
+          });
+        }
+      });
+      
+      if (readings.length === 0) {
+        updateMachineStatus(machineId, 'offline', 0);
+        return;
+      }
+      
+      // Sort by timestamp (newest first)
+      readings.sort((a, b) => b.timestamp - a.timestamp);
+      const latestReading = readings[0];
+      const minutesSinceUpdate = (Date.now() - latestReading.timestamp) / (1000 * 60);
+      
+      // Check if offline (no updates for > 5 minutes)
+      if (minutesSinceUpdate > 5) {
+        updateMachineStatus(machineId, 'offline', 0);
+        return;
+      }
+      
+      // Calculate speed if we have previous data
+      let currentSpeed = 0;
+      let isRunning = false;
+      
+      const machine = machineData[machineId];
+      
+      if (machine.lastLength !== null && machine.lastTimestamp !== null) {
+        const timeDiff = (latestReading.timestamp - machine.lastTimestamp) / 1000; // in seconds
+        const lengthDiff = latestReading.length - machine.lastLength;
+        
+        // Only calculate speed if time difference is reasonable (1-300 seconds)
+        if (timeDiff > 1 && timeDiff < 300) {
+          currentSpeed = (lengthDiff / timeDiff) * 60; // Convert to M/min
+          
+          // Update same reading counter
+          if (Math.abs(lengthDiff) < 0.01) { // If reading is essentially the same
+            machine.sameReadingCount++;
+          } else {
+            machine.sameReadingCount = 0;
+            isRunning = true;
+          }
+        }
+      }
+      
+      // If reading has been same for 3+ times, consider stopped
+      if (machine.sameReadingCount >= 3) {
+        isRunning = false;
+        currentSpeed = 0;
+      }
+      
+      // Update status based on speed
+      let status = isRunning ? 'running' : 'stopped';
+      
+      // If no movement and not recently updated, show stopped
+      if (currentSpeed <= 0.01 && !isRunning) {
+        status = 'stopped';
+      }
+      
+      // Update machine data
+      machine.lastLength = latestReading.length;
+      machine.lastTimestamp = latestReading.timestamp;
+      machine.lastSpeed = currentSpeed;
+      
+      // Update UI
+      updateMachineStatus(machineId, status, currentSpeed);
+      
+    }, function(error) {
+      console.error(`${machineId} monitoring error:`, error);
+      updateMachineStatus(machineId, 'offline', 0);
+    });
+  }
+  
+  // Function to update machine status and speed
+  function updateMachineStatus(machineId, status, speed) {
+    const statusDotElement = document.getElementById(`${machineId}-status-dot`);
+    const speedElement = document.getElementById(`${machineId}-speed`);
+    
+    if (!statusDotElement || !speedElement) return;
+    
+    // Update status dot
+    statusDotElement.classList.remove('status-running', 'status-stopped', 'status-offline', 'blinking');
+    
+    switch(status) {
+      case 'running':
+        statusDotElement.classList.add('status-running', 'blinking');
+        statusDotElement.title = 'Machine Running';
+        break;
+      case 'stopped':
+        statusDotElement.classList.add('status-stopped');
+        statusDotElement.title = 'Machine Stopped';
+        break;
+      case 'offline':
+        statusDotElement.classList.add('status-offline');
+        statusDotElement.title = 'Machine Offline';
+        break;
+    }
+    
+    // Update speed
+    if (speed > 0) {
+      speedElement.textContent = speed.toFixed(2);
+    } else {
+      speedElement.textContent = '0.00';
+    }
+    
+    // Update title with more info
+    statusDotElement.title = `${machineId.toUpperCase()}: ${status.toUpperCase()} | Speed: ${speed.toFixed(2)} M/min`;
+  }
+  
+  // Machine status and speed monitoring function
+  function monitorMachineStatus(machineId, sensorPath) {
+    console.log(`Monitoring machine ${machineId} at path: ${sensorPath}`);
+    
+    const sensorRef = database.ref(sensorPath);
+    
+    sensorRef.limitToLast(2).on('value', function(snapshot) {
+      const readings = [];
+      snapshot.forEach(function(childSnapshot) {
+        const data = childSnapshot.val();
+        if (data && data.length && data.timestamp) {
+          readings.push({
+            length: parseFloat(data.length),
+            timestamp: data.timestamp * 1000
+          });
+        }
+      });
+      
+      if (readings.length < 2) {
+        // Not enough data to determine status
+        updateMachineStatus(machineId, 'offline', 0);
+        return;
+      }
+      
+      // Sort by timestamp (oldest first)
+      readings.sort((a, b) => a.timestamp - b.timestamp);
+      
+      const olderReading = readings[0];
+      const newerReading = readings[readings.length - 1];
+      
+      const timeDiff = (newerReading.timestamp - olderReading.timestamp) / 1000; // in seconds
+      const lengthDiff = newerReading.length - olderReading.length;
+      const minutesSinceUpdate = (Date.now() - newerReading.timestamp) / (1000 * 60);
+      
+      // Check if offline
+      if (minutesSinceUpdate > 5) {
+        updateMachineStatus(machineId, 'offline', 0);
+        return;
+      }
+      
+      // Calculate speed
+      let currentSpeed = 0;
+      if (timeDiff > 0) {
+        currentSpeed = (lengthDiff / timeDiff) * 60; // M/min
+      }
+      
+      // Determine status
+      let status = 'stopped';
+      
+      // Machine is running if:
+      // 1. Length has increased
+      // 2. AND speed is above threshold
+      // 3. AND data is recent
+      if (lengthDiff > 0.01 && currentSpeed > 0.1 && minutesSinceUpdate <= 2) {
+        status = 'running';
+      }
+      
+      // Update machine data
+      const machine = machineData[machineId];
+      if (machine) {
+        machine.lastLength = newerReading.length;
+        machine.lastTimestamp = newerReading.timestamp;
+        machine.lastSpeed = currentSpeed;
+      }
+      
+      // Update UI
+      updateMachineStatus(machineId, status, currentSpeed);
+      
+      console.log(`${machineId}: LengthDiff=${lengthDiff.toFixed(2)}, Speed=${currentSpeed.toFixed(2)}, Status=${status}`);
+      
+    }, function(error) {
+      console.error(`${machineId} monitoring error:`, error);
+      updateMachineStatus(machineId, 'offline', 0);
+    });
+  }
+  
+  // Function to update machine status and speed
+  function updateMachineStatus(machineId, status, speed) {
+    const statusDotElement = document.getElementById(`${machineId}-status-dot`);
+    const speedElement = document.getElementById(`${machineId}-speed`);
+    
+    if (!statusDotElement || !speedElement) return;
+    
+    // Update status dot
+    statusDotElement.className = 'status-dot';
+    
+    switch(status) {
+      case 'running':
+        statusDotElement.classList.add('status-running', 'blinking');
+        statusDotElement.title = 'Machine Running';
+        speedElement.style.color = '#28a745';
+        break;
+      case 'stopped':
+        statusDotElement.classList.add('status-stopped');
+        statusDotElement.title = 'Machine Stopped';
+        speedElement.style.color = '#dc3545';
+        break;
+      case 'offline':
+        statusDotElement.classList.add('status-offline');
+        statusDotElement.title = 'Machine Offline';
+        speedElement.style.color = '#ffc107';
+        break;
+    }
+    
+    // Update speed display
+    if (speed > 0.01) {
+      speedElement.textContent = speed.toFixed(2);
+      speedElement.style.fontWeight = 'bold';
+    } else {
+      speedElement.textContent = '0.00';
+      speedElement.style.fontWeight = 'normal';
+    }
+  }
+  
+  // Initialize machine monitoring
+  function initializeMachineMonitoring() {
+    console.log("Initializing machine monitoring...");
+    
+    // Check authentication
+    const loggedIn = localStorage.getItem("loggedIn") === "true";
+    if (!loggedIn) {
+      window.location.href = "index.html";
+      return;
+    }
+    
+    // Use anonymous authentication
+    firebase.auth().signInAnonymously()
+      .then(() => {
+        console.log("Signed in anonymously");
+        
+        // Set initial status
+        updateMachineStatus('cladding1', 'offline', 0);
+        updateMachineStatus('drawing1', 'offline', 0);
+        updateMachineStatus('drawing2', 'offline', 0);
+        
+        // IMPORTANT: Adjust these paths based on your Firebase structure
+        // If each machine has separate data paths:
+        // monitorMachineStatus('cladding1', 'Sensor/cladding1/readings');
+        // monitorMachineStatus('drawing1', 'Sensor/drawing1/readings');
+        // monitorMachineStatus('drawing2', 'Sensor/drawing2/readings');
+        
+        // If all machines share same data path:
+        // You need separate Firebase paths for each machine
+        // For now using same path with different logic
+        setTimeout(() => monitorMachineStatus('cladding1', 'Sensor/readings'), 1000);
+        setTimeout(() => monitorMachineStatus('drawing1', 'Sensor/readings'), 2000);
+        setTimeout(() => monitorMachineStatus('drawing2', 'Sensor/readings'), 3000);
+        
+        // Update every 5 seconds for real-time updates
+        setInterval(() => {
+          monitorMachineStatus('cladding1', 'Sensor/readings');
+          monitorMachineStatus('drawing1', 'Sensor/readings');
+          monitorMachineStatus('drawing2', 'Sensor/readings');
+        }, 5000);
+      })
+      .catch((error) => {
+        console.error("Anonymous sign-in error:", error);
+      });
+  }
 
   // Logout functionality
   document.getElementById('logoutButton').addEventListener('click', function() {
-    auth.signOut().then(() => {
-      localStorage.setItem("loggedIn", "false");
+    localStorage.setItem("loggedIn", "false");
+    
+    firebase.auth().signOut().then(() => {
       alert('You have been logged out.');
       window.location.href = "index.html";
     }).catch((error) => {
       console.error('Logout error:', error);
+      window.location.href = "index.html";
     });
   });
 
@@ -234,10 +664,8 @@
   }
 
   function logoutUser() {
-    auth.signOut().then(() => {
-      localStorage.setItem("loggedIn", "false");
-      window.location.href = "index.html";
-    });
+    localStorage.setItem("loggedIn", "false");
+    window.location.href = "index.html";
   }
 
   document.addEventListener("mousemove", resetTimer);
@@ -245,7 +673,11 @@
   document.addEventListener("touchstart", resetTimer);
   document.addEventListener("click", resetTimer);
 
-  resetTimer();
+  // Initialize when page loads
+  window.addEventListener('load', function() {
+    initializeMachineMonitoring();
+    resetTimer();
+  });
 </script>
 </body>
 </html>
