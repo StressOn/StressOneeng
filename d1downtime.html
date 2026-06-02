@@ -3,266 +3,775 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StressON Engineering - Device Downtime</title>
+    <title>Downtime Analytics - Systematic Industries</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase & Chart.js -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+
     <style>
-        body {
+        /* ==================== CSS VARIABLES ==================== */
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1e40af;
+            --primary-light: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ==================== GLOBAL RESET ==================== */
+        * {
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #f0f4ff, #e6eef8);
+            box-sizing: border-box;
+        }
+
+        /* ==================== BASE STYLES ==================== */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
-            font-family: 'Arial', sans-serif;
-            color: #333;
+            line-height: 1.6;
         }
 
-        header {
-            background: linear-gradient(135deg, #007BFF, #0056b3);
-            color: white;
-            text-align: center;
-            padding: 20px 0;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        /* ==================== HEADER ==================== */
+        .header {
             position: fixed;
             top: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-md);
             z-index: 1000;
+            transition: var(--transition);
         }
 
-        header h1 {
-            font-size: 2rem;
-            margin: 0;
-        }
-
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 1.5rem;
-            }
-        }
-
-        .container {
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            padding: 20px;
-            margin-top: 100px;
-            margin-bottom: 100px;
-            justify-content: center;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                padding: 10px;
-                margin-bottom: 120px;
-            }
-        }
-
-        .downtime-box {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 25px;
-            width: 30%;
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .downtime-box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        @media (max-width: 768px) {
-            .downtime-box {
-                width: 100%;
-            }
-        }
-
-        .downtime-box h2 {
+        .header-title {
             font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: #007BFF;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
- /* Back to Main Page Button */
-        .back-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #007BFF;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 1rem;
-            z-index: 1000;
+        .header-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-left: 2.5rem;
         }
 
-        .back-button:hover {
-            background-color: #0056b3;
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
 
-        .combined-table-container {
-            margin-top: 25px;
-            text-align: center;
-            width: 80%;
-            margin-left: auto;
-            margin-right: auto;
+        /* ==================== CONTAINER ==================== */
+        .container {
+            max-width: 1400px;
+            margin: 100px auto 80px;
+            padding: 2rem;
+            flex-grow: 1;
+        }
+
+        /* ==================== SECTION STYLES ==================== */
+        .section {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            transition: var(--transition);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-header i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ==================== DOWNTIME GRID ==================== */
+        .downtime-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .downtime-card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
         }
 
-        @media (max-width: 768px) {
-            .combined-table-container {
-                width: 100%;
-                padding: 10px;
-            }
+        .downtime-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            transition: var(--transition);
+        }
+
+        .downtime-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .downtime-card.no-material::before {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .downtime-card.mold-defective::before {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .downtime-card.maintenance::before {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .card-icon.no-material {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .card-icon.mold-defective {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .card-icon.maintenance {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .card-title {
+            flex: 1;
+        }
+
+        .card-title h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .card-title p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 250px;
+            margin-top: 1rem;
+        }
+
+        /* ==================== TABLE STYLES ==================== */
+        .table-container {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .table-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .table-wrapper::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         th {
-            background: linear-gradient(135deg, #007BFF, #0056b3);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             color: white;
-            text-align: center;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        tr:hover td {
+            background: var(--bg-primary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ==================== BUTTONS ==================== */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-primary);
+            border-color: var(--primary-color);
+        }
+
+        /* ==================== STATS CARDS ==================== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            font-size: 1.25rem;
+            color: white;
+        }
+
+        /* ==================== FOOTER ==================== */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        footer strong {
+            color: var(--text-primary);
+        }
+
+        /* ==================== LOADING STATE ==================== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ==================== ANIMATIONS ==================== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        /* ==================== RESPONSIVE DESIGN ==================== */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1.125rem;
+            }
+
+            .header-subtitle {
+                display: none;
+            }
+
+            .container {
+                margin: 80px auto 70px;
+                padding: 1rem;
+            }
+
+            .section {
+                padding: 1.25rem;
+            }
+
+            .section-header h2 {
+                font-size: 1.25rem;
+            }
+
+            .downtime-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 200px;
+            }
+
+            .table-wrapper {
+                max-height: 300px;
+            }
+
+            .header-actions {
+                gap: 0.5rem;
+            }
+
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.875rem;
+            }
+        }
+
+        /* ==================== UTILITY CLASSES ==================== */
+        .hidden {
+            display: none;
+        }
+
+        .text-center {
             text-align: center;
         }
 
-        .export-button {
-            background: linear-gradient(135deg, #007BFF, #0056b3);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            margin-top: 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.3s;
-            font-weight: bold;
-        }
-
-        .export-button:hover {
-            background: linear-gradient(135deg, #0056b3, #007BFF);
-        }
-
-        canvas {
-            max-width: 100%;
-            height: auto;
-        }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Systematic Industries Ltd</h1>
-    </header>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
 
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <div class="header-title">
+                    <i class="fas fa-clock"></i> Downtime Analytics
+                </div>
+                <div class="header-subtitle">Real-time Machine Downtime Monitoring</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='main.html'">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
     <div class="container">
-        <div class="downtime-box">
-            <h2>No Material Downtime</h2>
-            <canvas id="noMaterialDowntimeChart" width="150" height="150"></canvas>
+        <!-- Summary Stats -->
+        <div class="section">
+            <div class="section-header">
+                <i class="fas fa-chart-pie"></i>
+                <h2>Overview Statistics</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-label">No Material</div>
+                    <div class="stat-value" id="totalNoMaterial">0 min</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="stat-label">Mold Defective</div>
+                    <div class="stat-value" id="totalMoldDefective">0 min</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <div class="stat-label">Maintenance</div>
+                    <div class="stat-value" id="totalMaintenance">0 min</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
+                    <div class="stat-label">Total Downtime</div>
+                    <div class="stat-value" id="totalDowntime">0 min</div>
+                </div>
+            </div>
         </div>
 
-        <div class="downtime-box">
-            <h2>Mold Defective Downtime</h2>
-            <canvas id="moldDefectiveDowntimeChart" width="150" height="150"></canvas>
+        <!-- Downtime Charts -->
+        <div class="downtime-grid">
+            <!-- No Material Card -->
+            <div class="downtime-card no-material">
+                <div class="card-header">
+                    <div class="card-icon no-material">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>No Material</h3>
+                        <p>Material shortage downtime</p>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="noMaterialDowntimeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Mold Defective Card -->
+            <div class="downtime-card mold-defective">
+                <div class="card-header">
+                    <div class="card-icon mold-defective">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>Mold Defective</h3>
+                        <p>Equipment malfunction downtime</p>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="moldDefectiveDowntimeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Maintenance Card -->
+            <div class="downtime-card maintenance">
+                <div class="card-header">
+                    <div class="card-icon maintenance">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <div class="card-title">
+                        <h3>Maintenance</h3>
+                        <p>Scheduled maintenance downtime</p>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="maintenanceDowntimeChart"></canvas>
+                </div>
+            </div>
         </div>
 
-        <div class="downtime-box">
-            <h2>Maintenance Downtime</h2>
-            <canvas id="maintenanceDowntimeChart" width="150" height="150"></canvas>
+        <!-- Combined Downtime Table -->
+        <div class="section">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-table"></i> Combined Downtime Report
+                    </h3>
+                    <button class="btn btn-success" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="combinedDowntimeTable">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-calendar-alt"></i> Date</th>
+                                <th><i class="fas fa-clock"></i> Total Downtime (Minutes)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Rows will be inserted dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="combined-table-container">
-        <h2>Combined Downtime (All Categories)</h2>
-        <div style="max-height: 160px; overflow-y: auto;">
-            <table id="combinedDowntimeTable">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Total Downtime (Minutes)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be inserted here dynamically -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <button class="back-button" onclick="window.location.href='main.html'">Back to Page</button>
-    <button id="exportButton" class="export-button">Export to Excel</button>
-
+    <!-- Footer -->
     <footer>
-        <p>&copy; 2025 Systematic Industries Ltd. All rights reserved.</p>
+        <strong>Systematic Industries Ltd</strong> | Downtime Monitoring System © 2025
     </footer>
 
     <script>
-        // Firebase configuration
+        // ==================== FIREBASE CONFIGURATION ====================
         const firebaseConfig = {
             apiKey: "AIzaSyBIf_5OwMDRKm35I0x3v5LbibYyrBrug9k",
             databaseURL: "https://customer-2-88220-default-rtdb.firebaseio.com/"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // Function to fetch and process downtime data
+        // ==================== GLOBAL VARIABLES ====================
+        let charts = {
+            noMaterial: null,
+            moldDefective: null,
+            maintenance: null
+        };
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        // ==================== DATA FETCHING ====================
         async function fetchDowntimeData() {
             try {
-                // Get the current date to organize data by month
-                const currentDate = new Date();
-                const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed
-                const currentYear = currentDate.getFullYear();
-                
-                // Reference to the downtime data in Firebase
                 const downtimeRef = database.ref('downtime');
-                
-                // Fetch all downtime data
                 const snapshot = await downtimeRef.once('value');
                 const downtimeData = snapshot.val();
                 
-                // Initialize data structures
-                const dateMap = new Map(); // To store combined data by date
+                const dateMap = new Map();
                 const categoryData = {
                     noMaterial: { labels: [], durations: [] },
                     moldDefective: { labels: [], durations: [] },
                     maintenance: { labels: [], durations: [] }
                 };
                 
-                // Process each date in the downtime data
+                // Process downtime data
                 for (const dateKey in downtimeData) {
                     if (downtimeData.hasOwnProperty(dateKey)) {
                         const dateData = downtimeData[dateKey];
                         
-                        // Process each category for this date
                         for (const category in dateData) {
                             if (dateData.hasOwnProperty(category)) {
                                 const entries = dateData[category];
-                                
-                                // Calculate total duration for this category on this date
                                 let totalDuration = 0;
+                                
                                 for (const entryKey in entries) {
                                     if (entries.hasOwnProperty(entryKey)) {
                                         const entry = entries[entryKey];
@@ -272,7 +781,6 @@
                                     }
                                 }
                                 
-                                // Add to the appropriate category data
                                 switch(category) {
                                     case 'noMaterial':
                                         categoryData.noMaterial.labels.push(dateKey);
@@ -288,7 +796,6 @@
                                         break;
                                 }
                                 
-                                // Update combined data
                                 if (!dateMap.has(dateKey)) {
                                     dateMap.set(dateKey, {
                                         noMaterial: 0,
@@ -306,12 +813,10 @@
                     }
                 }
                 
-                // Sort dates chronologically
                 const sortedDates = Array.from(dateMap.keys()).sort((a, b) => {
                     return new Date(a) - new Date(b);
                 });
                 
-                // Prepare combined data for table
                 const combinedTableData = sortedDates.map(date => {
                     const entry = dateMap.get(date);
                     return {
@@ -342,64 +847,55 @@
             }
         }
 
-        // Function to initialize charts and table
-        function initializeUI(data) {
-            // Initialize individual charts
-            createChart('noMaterialDowntimeChart', 
-                        data.categoryData.noMaterial.labels, 
-                        data.categoryData.noMaterial.durations, 
-                        'No Material Downtime',
-                        'rgba(54, 162, 235, 0.6)');
-            
-            createChart('moldDefectiveDowntimeChart', 
-                        data.categoryData.moldDefective.labels, 
-                        data.categoryData.moldDefective.durations, 
-                        'Mold Defective Downtime',
-                        'rgba(255, 99, 132, 0.6)');
-            
-            createChart('maintenanceDowntimeChart', 
-                        data.categoryData.maintenance.labels, 
-                        data.categoryData.maintenance.durations, 
-                        'Maintenance Downtime',
-                        'rgba(75, 192, 192, 0.6)');
-            
-            // Populate combined table
-            const tableBody = document.querySelector('#combinedDowntimeTable tbody');
-            tableBody.innerHTML = '';
-            
-            data.combinedTableData.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.date}</td>
-                    <td>${item.total.toFixed(1)} minutes</td>
-                `;
-                tableBody.appendChild(row);
-            });
-            
-            // Set up export functionality
-            document.getElementById('exportButton').addEventListener('click', () => {
-                exportToExcel(data);
-            });
-        }
-
-        // Function to create a chart
-        function createChart(chartId, labels, data, labelName, backgroundColor) {
+        // ==================== CHART CREATION ====================
+        function createChart(chartId, labels, data, labelName, gradientColors) {
             const ctx = document.getElementById(chartId).getContext('2d');
-            new Chart(ctx, {
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, gradientColors[0]);
+            gradient.addColorStop(1, gradientColors[1]);
+            
+            // Destroy existing chart if it exists
+            if (charts[chartId.replace('DowntimeChart', '')]) {
+                charts[chartId.replace('DowntimeChart', '')].destroy();
+            }
+            
+            charts[chartId.replace('DowntimeChart', '')] = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
                         label: labelName,
-                        backgroundColor: backgroundColor,
-                        borderColor: backgroundColor.replace('0.6', '1'),
-                        borderWidth: 1,
+                        backgroundColor: gradient,
+                        borderColor: gradientColors[0],
+                        borderWidth: 2,
+                        borderRadius: 8,
                         data: data
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            borderColor: gradientColors[0],
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(1) + ' minutes';
+                                }
+                            }
+                        },
                         zoom: {
                             pan: {
                                 enabled: true,
@@ -407,7 +903,8 @@
                             },
                             zoom: {
                                 wheel: {
-                                    enabled: true
+                                    enabled: true,
+                                    speed: 0.1
                                 },
                                 pinch: {
                                     enabled: true
@@ -418,138 +915,179 @@
                     },
                     scales: {
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Date'
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11
+                                }
                             }
                         },
                         y: {
-                            title: {
-                                display: true,
-                                text: 'Minutes'
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
                             },
-                            beginAtZero: true
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' min';
+                                }
+                            }
                         }
                     }
                 }
             });
         }
 
-        // Function to export data to Excel
-        function exportToExcel(data) {
-            const exportData = data.sortedDates.map(date => {
-                const entry = data.dateMap.get(date);
-                return {
-                    'Date': date,
-                    'No Material (min)': entry.noMaterial,
-                    'Mold Defective (min)': entry.moldDefective,
-                    'Maintenance (min)': entry.maintenance,
-                    'Total Downtime (min)': entry.total
-                };
+        // ==================== UI UPDATE ====================
+        function updateStatistics(data) {
+            let totalNoMaterial = 0;
+            let totalMoldDefective = 0;
+            let totalMaintenance = 0;
+
+            data.dateMap.forEach(entry => {
+                totalNoMaterial += entry.noMaterial;
+                totalMoldDefective += entry.moldDefective;
+                totalMaintenance += entry.maintenance;
             });
-            
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Downtime Report");
-            XLSX.writeFile(workbook, `Downtime_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+            const totalDowntime = totalNoMaterial + totalMoldDefective + totalMaintenance;
+
+            document.getElementById('totalNoMaterial').textContent = totalNoMaterial.toFixed(1) + ' min';
+            document.getElementById('totalMoldDefective').textContent = totalMoldDefective.toFixed(1) + ' min';
+            document.getElementById('totalMaintenance').textContent = totalMaintenance.toFixed(1) + ' min';
+            document.getElementById('totalDowntime').textContent = totalDowntime.toFixed(1) + ' min';
         }
-	
-// --- Secure Anonymous Authentication ---
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        console.log("Signed in anonymously as:", user.uid);
-        initializeDowntime(); // Call function to start after login
-    } else {
-        firebase.auth().signInAnonymously().catch((error) => {
-            console.error("Anonymous Sign-in Error:", error);
-        });
-    }
-});
 
-// Wrap your main initialization inside a function
-async function initializeDowntime() {
-    const data = await fetchDowntimeData();
-    initializeUI(data);
-
-    // Set up auto-refresh every 5 minutes
-    setInterval(async () => {
-        const newData = await fetchDowntimeData();
-        initializeUI(newData);
-    }, 300000); // 5 minutes
-}
-
-
-        // Main initialization
-        document.addEventListener('DOMContentLoaded', async () => {
-            const data = await fetchDowntimeData();
-            initializeUI(data);
+        function updateTable(data) {
+            const tableBody = document.querySelector('#combinedDowntimeTable tbody');
+            tableBody.innerHTML = '';
             
-            // Set up auto-refresh every 5 minutes
-            setInterval(async () => {
-                const newData = await fetchDowntimeData();
-                initializeUI(newData);
-            }, 300000); // 5 minutes in milliseconds
+            if (data.combinedTableData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="2" style="text-align: center; color: var(--text-secondary);">No downtime data available</td>`;
+                tableBody.appendChild(row);
+                return;
+            }
+
+            data.combinedTableData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><i class="fas fa-calendar" style="color: var(--primary-color); margin-right: 0.5rem;"></i>${item.date}</td>
+                    <td><strong>${item.total.toFixed(1)}</strong> minutes</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function initializeUI(data) {
+            // Update statistics
+            updateStatistics(data);
+
+            // Create charts
+            createChart('noMaterialDowntimeChart', 
+                        data.categoryData.noMaterial.labels, 
+                        data.categoryData.noMaterial.durations, 
+                        'No Material Downtime',
+                        ['rgba(6, 182, 212, 0.8)', 'rgba(6, 182, 212, 0.2)']);
+            
+            createChart('moldDefectiveDowntimeChart', 
+                        data.categoryData.moldDefective.labels, 
+                        data.categoryData.moldDefective.durations, 
+                        'Mold Defective Downtime',
+                        ['rgba(239, 68, 68, 0.8)', 'rgba(239, 68, 68, 0.2)']);
+            
+            createChart('maintenanceDowntimeChart', 
+                        data.categoryData.maintenance.labels, 
+                        data.categoryData.maintenance.durations, 
+                        'Maintenance Downtime',
+                        ['rgba(16, 185, 129, 0.8)', 'rgba(16, 185, 129, 0.2)']);
+            
+            // Update table
+            updateTable(data);
+
+            hideLoading();
+        }
+
+        // ==================== EXCEL EXPORT ====================
+        function exportToExcel() {
+            showLoading();
+            
+            fetchDowntimeData().then(data => {
+                const exportData = data.sortedDates.map(date => {
+                    const entry = data.dateMap.get(date);
+                    return {
+                        'Date': date,
+                        'No Material (min)': entry.noMaterial.toFixed(2),
+                        'Mold Defective (min)': entry.moldDefective.toFixed(2),
+                        'Maintenance (min)': entry.maintenance.toFixed(2),
+                        'Total Downtime (min)': entry.total.toFixed(2)
+                    };
+                });
+                
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Downtime Report");
+                XLSX.writeFile(workbook, `Downtime_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+                
+                hideLoading();
+            });
+        }
+
+        // ==================== AUTO LOGOUT ====================
+        let logoutTimer;
+
+        function resetTimer() {
+            clearTimeout(logoutTimer);
+            logoutTimer = setTimeout(logoutUser, 600000); // 10 minutes
+        }
+
+        function logoutUser() {
+            localStorage.setItem("loggedIn", "false");
+            window.location.href = "index.html";
+        }
+
+        ['mousemove', 'keypress', 'touchstart', 'click'].forEach(event => {
+            document.addEventListener(event, resetTimer);
         });
 
-        // Security measures (your existing code remains the same)
-        document.addEventListener("contextmenu", function (e) {
-            e.preventDefault();
+        // ==================== SECURITY ====================
+        document.addEventListener("contextmenu", e => e.preventDefault());
+        
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "F12" || 
+                (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C")) ||
+                (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s" || e.key === "P"))) {
+                e.preventDefault();
+            }
         });
 
+        document.addEventListener("selectstart", e => e.preventDefault());
 
-document.addEventListener("contextmenu", function (e) {
-    e.preventDefault(); // Disable right-click menu
-});
-
-document.addEventListener("keydown", function (e) {
-    // Disable common copy shortcuts: Ctrl+C, Ctrl+X, Ctrl+U, and Ctrl+S
-    if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
-        e.preventDefault();
-    }
-});
-
-document.addEventListener("selectstart", function (e) {
-    e.preventDefault(); // Disable text selection
-});
-
-document.addEventListener("keydown", function (e) {
-    if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) {
-        e.preventDefault();
-    }
-    if (e.ctrlKey && e.key === "P") {
-        e.preventDefault();
-    }
-    // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
-    if (e.key === "F12" || 
-        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
-        e.preventDefault();
-    }
-});
-
-let logoutTimer;
-
-// Function to reset the logout timer
-function resetTimer() {
-    clearTimeout(logoutTimer); // Clear any existing timer
-    logoutTimer = setTimeout(logoutUser, 600000); // Set new timer for 1 min (60000 ms)
-}
-
-// Function to log out the user
-function logoutUser() {
-    localStorage.setItem("loggedIn", "false"); // Reset login flag
-    window.location.href = "index.html"; // Redirect to login page
-}
-
-// Event listeners for user activity
-document.addEventListener("mousemove", resetTimer);
-document.addEventListener("keypress", resetTimer);
-document.addEventListener("touchstart", resetTimer); // For mobile touchscreens
-document.addEventListener("click", resetTimer);
-
-// Start the timer when the page loads
-resetTimer();
-
-
+        // ==================== INITIALIZATION ====================
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                console.log("Signed in as:", user.uid);
+                showLoading();
+                
+                const data = await fetchDowntimeData();
+                initializeUI(data);
+                resetTimer();
+                
+                // Auto-refresh every 5 minutes
+                setInterval(async () => {
+                    const newData = await fetchDowntimeData();
+                    initializeUI(newData);
+                }, 300000);
+                
+            } else {
+                firebase.auth().signInAnonymously().catch((error) => {
+                    console.error("Sign-in Error:", error);
+                    hideLoading();
+                });
+            }
+        });
     </script>
 </body>
 </html>
