@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OEE Dashboard | Systematic Industries</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -731,21 +733,29 @@ function updateOEE() {
 
 // Add this to the DOMContentLoaded event listener to set default date:
 document.getElementById('selectedDate').valueAsDate = new Date();
-
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log("Dashboard initialized");
-            
-            // Set default values
-            document.getElementById('lineSpeed').value = lineSpeed;
-            document.getElementById('shiftHours').value = shiftHours;
-            
-            // Fetch initial data
-            fetchAllData();
-            
-            // Set up auto-refresh (5 minutes)
-            setInterval(fetchAllData, 300000);
+// --- Secure Anonymous Authentication ---
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        console.log("Signed in anonymously as:", user.uid);
+        initializeOEE();
+    } else {
+        firebase.auth().signInAnonymously().catch((error) => {
+            console.error("Anonymous Sign-in Error:", error);
         });
+    }
+});
+
+// Wrap your existing OEE dashboard startup inside a function
+function initializeOEE() {
+    console.log("Authenticated. Initializing OEE Dashboard...");
+    document.getElementById('selectedDate').valueAsDate = new Date();
+    document.getElementById('lineSpeed').value = lineSpeed;
+    document.getElementById('shiftHours').value = shiftHours;
+    fetchAllData();
+    setInterval(fetchAllData, 300000); // refresh every 5 minutes
+}
+
+
 
         // Security measures
         document.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -753,7 +763,7 @@ document.getElementById('selectedDate').valueAsDate = new Date();
             if (e.ctrlKey && (e.key === "c" || e.key === "x" || e.key === "u" || e.key === "s")) {
                 e.preventDefault();
             }
-            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+            if (e.key === "F11" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
                 e.preventDefault();
             }
         });
